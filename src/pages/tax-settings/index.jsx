@@ -27,34 +27,41 @@ const TaxSettings = () => {
       id: 1,
       name: "Tranche 1",
       minAmount: 0,
-      maxAmount: 500000,
+      maxAmount: 1000000,
       rate: 0
     },
     {
       id: 2,
       name: "Tranche 2", 
-      minAmount: 500001,
-      maxAmount: 1000000,
+      minAmount: 1000001,
+      maxAmount: 3000000,
       rate: 5
     },
     {
       id: 3,
       name: "Tranche 3",
-      minAmount: 1000001,
-      maxAmount: 2000000,
-      rate: 10
+      minAmount: 3000001,
+      maxAmount: 5000000,
+      rate: 8
     },
     {
       id: 4,
       name: "Tranche 4",
-      minAmount: 2000001,
-      maxAmount: 5000000,
-      rate: 15
+      minAmount: 5000001,
+      maxAmount: 10000000,
+      rate: 10
     },
     {
       id: 5,
       name: "Tranche 5",
-      minAmount: 5000001,
+      minAmount: 10000001,
+      maxAmount: 20000000,
+      rate: 15
+    },
+    {
+      id: 6,
+      name: "Tranche 6",
+      minAmount: 20000001,
       maxAmount: null,
       rate: 20
     }
