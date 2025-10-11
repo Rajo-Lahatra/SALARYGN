@@ -3,12 +3,12 @@ import React from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundary";
-import BatchProcessing from "./pages/batch-processing";
-import Login from "./pages/login";
-import Dashboard from "./pages/dashboard";
-import EmployeeManagement from "./pages/employee-management";
-import TaxSettings from "./pages/tax-settings";
-import EmployeeTaxCalculator from "./pages/employee-tax-calculator";
+import BatchProcessing from "./pages/batch-processing/index.jsx";
+import Login from "./pages/login/index.jsx";
+import Dashboard from "./pages/dashboard/index.jsx";
+import EmployeeManagement from "./pages/employee-management/index.jsx";
+import TaxSettings from "./pages/tax-settings/index.jsx";
+import EmployeeTaxCalculator from "./pages/employee-tax-calculator/index.jsx";
 
 const Routes = () => {
   return (
