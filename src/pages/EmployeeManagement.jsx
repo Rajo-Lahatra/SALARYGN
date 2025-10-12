@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Download, Edit, Calculator, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useSalaryData } from '../hooks/useSalaryData';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const EmployeeManagement = () => {
-  const [employees, setEmployees] = useState([]);
+  const { user } = useAuth();
+  const { employees, loading, saveEmployee, deleteEmployee } = useSalaryData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -19,113 +23,94 @@ const EmployeeManagement = () => {
     phone: ''
   });
 
-  // Charger les employés depuis le localStorage au démarrage
-  useEffect(() => {
-    const savedEmployees = localStorage.getItem('employees');
-    if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
-    } else {
-      // Données par défaut si aucun employé n'est sauvegardé
-      setEmployees([
-        {
-          id: 1,
-          fullName: "Mamadou Diallo",
-          employeeId: "EMP001",
-          position: "Développeur Senior",
-          department: "IT",
-          employmentType: "CDI",
-          baseSalary: 5000000,
-          email: "mamadou.diallo@entreprise.gn",
-          phone: "+224 622 123 456"
-        },
-        {
-          id: 2,
-          fullName: "Fatoumata Camara", 
-          employeeId: "EMP002",
-          position: "Responsable RH",
-          department: "RH",
-          employmentType: "CDI",
-          baseSalary: 4500000,
-          email: "fatoumata.camara@entreprise.gn",
-          phone: "+224 664 789 012"
-        }
-      ]);
-    }
-  }, []);
-
-  // Sauvegarder les employés dans le localStorage à chaque modification
-  useEffect(() => {
-    localStorage.setItem('employees', JSON.stringify(employees));
-  }, [employees]);
+  const navigate = useNavigate();
 
   const filteredEmployees = employees.filter(employee =>
-    employee.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.employee_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.position?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!newEmployee.fullName || !newEmployee.position || !newEmployee.baseSalary) {
       alert('Veuillez remplir les champs obligatoires');
       return;
     }
 
-    const employee = {
-      ...newEmployee,
-      id: Date.now(),
-      baseSalary: parseInt(newEmployee.baseSalary)
-    };
-
-    setEmployees(prev => [...prev, employee]);
-    setNewEmployee({
-      fullName: '',
-      employeeId: '',
-      position: '',
-      department: '',
-      employmentType: 'CDI',
-      baseSalary: '',
-      email: '',
-      phone: ''
-    });
-    setShowAddForm(false);
+    const result = await saveEmployee(newEmployee);
+    if (result.success) {
+      setNewEmployee({
+        fullName: '',
+        employeeId: '',
+        position: '',
+        department: '',
+        employmentType: 'CDI',
+        baseSalary: '',
+        email: '',
+        phone: ''
+      });
+      setShowAddForm(false);
+    } else {
+      alert('Erreur lors de l\'ajout: ' + result.error);
+    }
   };
 
   const handleEditEmployee = (employee) => {
-    setEditingEmployee(employee);
+    setEditingEmployee({
+      id: employee.id,
+      fullName: employee.full_name,
+      employeeId: employee.employee_id,
+      position: employee.position,
+      department: employee.department,
+      employmentType: employee.employment_type,
+      baseSalary: employee.base_salary?.toString() || '',
+      email: employee.email || '',
+      phone: employee.phone || ''
+    });
   };
 
-  const handleUpdateEmployee = () => {
+  const handleUpdateEmployee = async () => {
     if (!editingEmployee.fullName || !editingEmployee.position || !editingEmployee.baseSalary) {
       alert('Veuillez remplir les champs obligatoires');
       return;
     }
 
-    setEmployees(prev => 
-      prev.map(emp => 
-        emp.id === editingEmployee.id ? editingEmployee : emp
-      )
-    );
-    setEditingEmployee(null);
+    const result = await saveEmployee(editingEmployee);
+    if (result.success) {
+      setEditingEmployee(null);
+    } else {
+      alert('Erreur lors de la mise à jour: ' + result.error);
+    }
   };
 
-  const handleDeleteEmployee = (employeeId) => {
+  const handleDeleteEmployee = async (employeeId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet employé ?')) {
-      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+      const result = await deleteEmployee(employeeId);
+      if (!result.success) {
+        alert('Erreur lors de la suppression: ' + result.error);
+      }
     }
   };
 
   const handleCalculateSalary = (employee) => {
-    // Sauvegarder l'employé dans le localStorage pour le calculateur
-    localStorage.setItem('currentEmployee', JSON.stringify(employee));
+    // Sauvegarder l'employé dans le localStorage pour le calculateur (compatibilité)
+    localStorage.setItem('currentEmployee', JSON.stringify({
+      fullName: employee.full_name,
+      employeeId: employee.employee_id,
+      position: employee.position,
+      department: employee.department,
+      employmentType: employee.employment_type,
+      baseSalary: employee.base_salary
+    }));
     // Rediriger vers le calculateur
-    window.location.href = '/calculator';
+    navigate('/');
   };
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Nom,Matricule,Poste,Département,Type contrat,Salaire base,Email,Téléphone\n"
       + employees.map(emp => 
-          `"${emp.fullName}","${emp.employeeId}","${emp.position}","${emp.department}","${emp.employmentType}",${emp.baseSalary},"${emp.email}","${emp.phone}"`
+          `"${emp.full_name}","${emp.employee_id}","${emp.position}","${emp.department}","${emp.employment_type}",${emp.base_salary},"${emp.email}","${emp.phone}"`
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -140,19 +125,57 @@ const EmployeeManagement = () => {
   const departments = ['IT', 'RH', 'Finance', 'Marketing', 'Ventes', 'Production', 'Administration'];
   const employmentTypes = ['CDI', 'CDD', 'Stage', 'Consultant'];
 
+  // Rétrocompatibilité : charger depuis localStorage si pas d'utilisateur connecté
+  useEffect(() => {
+    if (!user) {
+      const savedEmployees = localStorage.getItem('employees');
+      if (savedEmployees) {
+        // Note: Dans ce cas, les employés seront gérés par localStorage
+        // car useSalaryData ne retournera pas d'employés sans utilisateur connecté
+      }
+    }
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Chargement des employés...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Gestion des Employés</h1>
-            <p className="text-gray-600">Gérez votre base de données d'employés</p>
+            <p className="text-gray-600">
+              {user ? 'Gérez votre base de données d\'employés' : 'Mode hors ligne - Les données sont sauvegardées localement'}
+            </p>
           </div>
-          <Button onClick={() => setShowAddForm(true)} className="flex items-center space-x-2">
+          <Button 
+            onClick={() => setShowAddForm(true)} 
+            className="flex items-center space-x-2"
+            disabled={!user}
+          >
             <Plus className="h-4 w-4" />
             <span>Nouvel Employé</span>
           </Button>
         </div>
+
+        {!user && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-700">
+              <strong>Mode hors ligne :</strong> Connectez-vous pour sauvegarder vos employés dans le cloud et bénéficier de la synchronisation multi-appareils.
+            </p>
+          </div>
+        )}
 
         {/* Barre de recherche et filtres */}
         <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
@@ -174,6 +197,7 @@ const EmployeeManagement = () => {
               variant="outline" 
               className="flex items-center space-x-2"
               onClick={handleExport}
+              disabled={employees.length === 0}
             >
               <Download className="h-4 w-4" />
               <span>Exporter</span>
@@ -183,90 +207,105 @@ const EmployeeManagement = () => {
 
         {/* Tableau des employés */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Employé
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Poste
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Département
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Salaire Base
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="font-medium text-gray-900">{employee.fullName}</div>
-                        <div className="text-sm text-gray-500">{employee.employeeId}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.position}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.department}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {employee.employmentType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Intl.NumberFormat('fr-GN', {
-                        style: 'currency',
-                        currency: 'GNF',
-                        minimumFractionDigits: 0
-                      }).format(employee.baseSalary)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditEmployee(employee)}
-                        className="flex items-center space-x-1"
-                      >
-                        <Edit className="h-3 w-3" />
-                        <span>Modifier</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleCalculateSalary(employee)}
-                        className="flex items-center space-x-1"
-                      >
-                        <Calculator className="h-3 w-3" />
-                        <span>Calculer</span>
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDeleteEmployee(employee.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </td>
+          {employees.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-gray-500">
+                {user ? 'Aucun employé sauvegardé' : 'Aucun employé disponible en mode hors ligne'}
+              </p>
+              <p className="text-sm text-gray-400 mt-2">
+                {user ? 'Les employés que vous sauvegardez apparaîtront ici' : 'Connectez-vous pour accéder à vos employés sauvegardés'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employé
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Poste
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Département
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Salaire Base
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredEmployees.map((employee) => (
+                    <tr key={employee.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="font-medium text-gray-900">{employee.full_name}</div>
+                          <div className="text-sm text-gray-500">{employee.employee_id}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.position}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.department}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {employee.employment_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.base_salary ? 
+                          new Intl.NumberFormat('fr-GN', {
+                            style: 'currency',
+                            currency: 'GNF',
+                            minimumFractionDigits: 0
+                          }).format(employee.base_salary) : 'N/A'
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditEmployee(employee)}
+                          className="flex items-center space-x-1"
+                          disabled={!user}
+                        >
+                          <Edit className="h-3 w-3" />
+                          <span>Modifier</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCalculateSalary(employee)}
+                          className="flex items-center space-x-1"
+                        >
+                          <Calculator className="h-3 w-3" />
+                          <span>Calculer</span>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteEmployee(employee.id)}
+                          className="text-red-600 hover:text-red-700"
+                          disabled={!user}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Modal d'ajout d'employé */}
@@ -473,7 +512,7 @@ const EmployeeManagement = () => {
                   <Input
                     type="number"
                     value={editingEmployee.baseSalary}
-                    onChange={(e) => setEditingEmployee(prev => ({ ...prev, baseSalary: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) => setEditingEmployee(prev => ({ ...prev, baseSalary: e.target.value }))}
                     placeholder="5000000"
                   />
                 </div>

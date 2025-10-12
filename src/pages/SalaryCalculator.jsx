@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Download, Users, FileText, Building, Sun, Moon, Briefcase } from 'lucide-react';
+import { Calculator, Download, Users, FileText, Building, Sun, Moon, Briefcase, Save, History } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { calculateNetSalary, formatCurrency, TAX_BRACKETS } from '../utils/taxCalculator';
 import { generatePayslipPDF } from '../utils/pdfGenerator';
+import { useAuth } from '../contexts/AuthContext';
+import { useSalaryData } from '../hooks/useSalaryData';
 
 const SalaryCalculator = () => {
+  const { user } = useAuth();
+  const { employees, company, saveEmployee, saveCompany, saveCalculation, loading } = useSalaryData();
+
   const [employee, setEmployee] = useState({
     fullName: '',
     employeeId: '',
@@ -34,23 +39,39 @@ const SalaryCalculator = () => {
     transportAllowance: '',
     livingAllowance: '',
     foodAllowance: '',
-    // Données pour heures supplémentaires détaillées
-    overtimeNormal1to4: '',    // Heures 1-4 à 30%
-    overtimeNormal5plus: '',   // Heures 5+ à 60%
-    overtimeNight1to4: '',     // Heures de nuit 1-4 à 50%
-    overtimeNight5plus: ''     // Heures de nuit 5+ à 80%
+    overtimeNormal1to4: '',
+    overtimeNormal5plus: '',
+    overtimeNight1to4: '',
+    overtimeNight5plus: ''
   });
 
   const [calculation, setCalculation] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
 
-  // Charger les données de l'employé depuis le localStorage au démarrage
+  // Charger les données de l'entreprise au démarrage
+  useEffect(() => {
+    if (company) {
+      setEmployer({
+        companyName: company.company_name || '',
+        address: company.address || '',
+        city: company.city || '',
+        phone: company.phone || '',
+        email: company.email || '',
+        rccm: company.rccm || '',
+        nif: company.nif || '',
+        cnssNumber: company.cnss_number || ''
+      });
+    }
+  }, [company]);
+
+  // Charger les données depuis le localStorage comme fallback
   useEffect(() => {
     const savedEmployee = localStorage.getItem('currentEmployee');
     const savedEmployer = localStorage.getItem('employer');
     
-    if (savedEmployee) {
+    if (savedEmployee && !user) {
       const employeeData = JSON.parse(savedEmployee);
       setEmployee(prev => ({
         ...prev,
@@ -61,7 +82,6 @@ const SalaryCalculator = () => {
         employmentType: employeeData.employmentType || 'CDI'
       }));
       
-      // Pré-remplir le salaire de base si disponible
       if (employeeData.baseSalary) {
         setSalaryData(prev => ({
           ...prev,
@@ -69,14 +89,13 @@ const SalaryCalculator = () => {
         }));
       }
       
-      // Nettoyer après utilisation
       localStorage.removeItem('currentEmployee');
     }
     
-    if (savedEmployer) {
+    if (savedEmployer && !user) {
       setEmployer(JSON.parse(savedEmployer));
     }
-  }, []);
+  }, [user]);
 
   const handleEmployeeChange = (field, value) => {
     setEmployee(prev => ({ ...prev, [field]: value }));
@@ -90,12 +109,46 @@ const SalaryCalculator = () => {
     setSalaryData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSaveCompany = async () => {
+    if (!employer.companyName) {
+      setError('Le nom de l\'entreprise est requis');
+      return;
+    }
+
+    const result = await saveCompany(employer);
+    if (result.success) {
+      setSaveMessage('Entreprise sauvegardée avec succès');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } else {
+      setError('Erreur sauvegarde entreprise: ' + result.error);
+    }
+  };
+
+  const handleSaveEmployee = async () => {
+    if (!employee.fullName) {
+      setError('Le nom complet est requis');
+      return;
+    }
+
+    const employeeToSave = {
+      ...employee,
+      baseSalary: salaryData.baseSalary ? parseFloat(salaryData.baseSalary) : null
+    };
+
+    const result = await saveEmployee(employeeToSave);
+    if (result.success) {
+      setSaveMessage('Employé sauvegardé avec succès');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } else {
+      setError('Erreur sauvegarde employé: ' + result.error);
+    }
+  };
+
   const handleCalculate = async () => {
     setError('');
     setIsCalculating(true);
     
     try {
-      // Simulation du temps de calcul
       setTimeout(() => {
         try {
           const result = calculateNetSalary({
@@ -116,6 +169,20 @@ const SalaryCalculator = () => {
           });
 
           setCalculation(result);
+
+          // Sauvegarder automatiquement le calcul si l'utilisateur est connecté
+          if (user) {
+            saveCalculation({
+              title: `Calcul ${employee.fullName || 'Sans nom'} - ${new Date().toLocaleDateString('fr-FR')}`,
+              input: {
+                employee,
+                salaryData,
+                employer
+              },
+              result,
+              period: new Date().toISOString().slice(0, 7)
+            });
+          }
         } catch (err) {
           setError(err.message);
         } finally {
@@ -154,16 +221,6 @@ const SalaryCalculator = () => {
       department: '',
       employmentType: 'CDI'
     });
-    setEmployer({
-      companyName: '',
-      address: '',
-      city: '',
-      phone: '',
-      email: '',
-      rccm: '',
-      nif: '',
-      cnssNumber: ''
-    });
     setSalaryData({
       baseSalary: '',
       allowances: '',
@@ -182,6 +239,24 @@ const SalaryCalculator = () => {
     setError('');
   };
 
+  // Charger un employé existant depuis la liste
+  const handleLoadEmployee = (selectedEmployee) => {
+    setEmployee({
+      fullName: selectedEmployee.full_name,
+      employeeId: selectedEmployee.employee_id,
+      position: selectedEmployee.position,
+      department: selectedEmployee.department,
+      employmentType: selectedEmployee.employment_type
+    });
+    
+    if (selectedEmployee.base_salary) {
+      setSalaryData(prev => ({
+        ...prev,
+        baseSalary: selectedEmployee.base_salary.toString()
+      }));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
@@ -191,15 +266,27 @@ const SalaryCalculator = () => {
             <Calculator className="h-8 w-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-900">Calculateur de Salaire Guinéen</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-2">
             Calculez les salaires nets selon le barème fiscal guinéen et générez des bulletins de paie
           </p>
+          {user && (
+            <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              Connecté en tant que {user.email}
+            </div>
+          )}
         </div>
 
-        {/* Message d'erreur */}
+        {/* Messages */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {saveMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700">{saveMessage}</p>
           </div>
         )}
 
@@ -208,10 +295,23 @@ const SalaryCalculator = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Informations employeur */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-                <Briefcase className="h-5 w-5 text-blue-600" />
-                <span>Informations Employeur</span>
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold flex items-center space-x-2">
+                  <Briefcase className="h-5 w-5 text-blue-600" />
+                  <span>Informations Employeur</span>
+                </h2>
+                {user && (
+                  <Button
+                    onClick={handleSaveCompany}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>Sauvegarder</span>
+                  </Button>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -296,14 +396,53 @@ const SalaryCalculator = () => {
                   />
                 </div>
               </div>
+              {!user && (
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note :</strong> Connectez-vous pour sauvegarder les informations de votre entreprise.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Informations employé */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-                <Users className="h-5 w-5 text-blue-600" />
-                <span>Informations Employé</span>
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <span>Informations Employé</span>
+                </h2>
+                <div className="flex space-x-2">
+                  {user && employees.length > 0 && (
+                    <select 
+                      onChange={(e) => {
+                        const selected = employees.find(emp => emp.id === e.target.value);
+                        if (selected) handleLoadEmployee(selected);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      defaultValue=""
+                    >
+                      <option value="">Charger un employé...</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.full_name} {emp.employee_id ? `(${emp.employee_id})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {user && (
+                    <Button
+                      onClick={handleSaveEmployee}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center space-x-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      <span>Sauvegarder</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -348,6 +487,13 @@ const SalaryCalculator = () => {
                   />
                 </div>
               </div>
+              {!user && (
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note :</strong> Connectez-vous pour sauvegarder les profils employés et charger des employés existants.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Données salariales */}
@@ -626,6 +772,14 @@ const SalaryCalculator = () => {
                 >
                   Réinitialiser
                 </Button>
+
+                {user && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-gray-600 text-center">
+                      ✓ Calculs sauvegardés automatiquement
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
