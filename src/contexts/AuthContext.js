@@ -140,9 +140,9 @@ export const AuthProvider = ({ children }) => {
     loading
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  return React.createElement(
+    AuthContext.Provider,
+    { value: value },
+    children
   );
 };
