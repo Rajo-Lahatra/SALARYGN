@@ -150,7 +150,7 @@ export const useSalaryData = () => {
     }
   };
 
-  // Sauvegarder l'entreprise
+  // NOUVEAU : Sauvegarder l'entreprise avec employee_count
   const saveCompany = async (companyData) => {
     if (!user) {
       return { success: false, error: 'Utilisateur non connecté' };
@@ -167,6 +167,7 @@ export const useSalaryData = () => {
         rccm: companyData.rccm,
         nif: companyData.nif,
         cnss_number: companyData.cnssNumber,
+        employee_count: companyData.employeeCount ? parseInt(companyData.employeeCount) : null, // NOUVEAU CHAMP
         updated_at: new Date().toISOString()
       };
 
@@ -202,6 +203,31 @@ export const useSalaryData = () => {
       return { success: true, company: data };
     } catch (error) {
       console.error('Erreur sauvegarde entreprise:', error.message);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Supprimer un employé
+  const deleteEmployee = async (employeeId) => {
+    if (!user) {
+      return { success: false, error: 'Utilisateur non connecté' };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', employeeId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Mettre à jour le state local
+      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erreur suppression employé:', error.message);
       return { success: false, error: error.message };
     }
   };
@@ -248,6 +274,7 @@ export const useSalaryData = () => {
     saveEmployee,
     saveCompany,
     saveCalculation,
+    deleteEmployee, // AJOUT: Fonction de suppression manquante
     refreshData: loadUserData
   };
 };

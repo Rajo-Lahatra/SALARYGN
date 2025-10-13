@@ -50,6 +50,12 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
     yPosition += 5;
   }
 
+  // NOUVEAU : Affichage de l'effectif
+  if (employer.employeeCount) {
+    pdf.text(`Effectif: ${employer.employeeCount} salariés`, 20, yPosition);
+    yPosition += 5;
+  }
+
   // Ligne séparatrice
   pdf.setDrawColor(200, 200, 200);
   pdf.line(20, yPosition, pageWidth - 20, yPosition);
@@ -180,7 +186,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
 
   // Vérifier si on a assez d'espace pour les charges employeur
   const remainingSpace = pageHeight - yPosition - 40;
-  const employerChargesHeight = 55; // Augmenté pour inclure ONFPP
+  const employerChargesHeight = 60; // Augmenté pour inclure la logique conditionnelle
   
   if (remainingSpace < employerChargesHeight) {
     pdf.addPage();
@@ -189,7 +195,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
     yPosition += 20;
   }
 
-  // CHARGES PATRONALES - MISE À JOUR AVEC ONFPP
+  // CHARGES PATRONALES - MIS À JOUR AVEC TAXE D'APPRENTISSAGE/ONFPP
   pdf.setFontSize(12);
   pdf.setTextColor(139, 69, 19);
   pdf.text('CHARGES PATRONALES', 20, yPosition);
@@ -209,19 +215,21 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
   
   yPosition += 7;
   
-  // NOUVEAU : ONFPP
-  pdf.text('ONFPP (1.5% du brut):', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.onfpp), 150, yPosition, { align: 'right' });
+  // AFFICHAGE CONDITIONNEL : Taxe d'Apprentissage ou ONFPP
+  if (calculation.employerCharges.taxeApprentissage > 0) {
+    pdf.text('Taxe d\'Apprentissage (3% du brut):', 20, yPosition);
+    pdf.text(formatCurrencyForPDF(calculation.employerCharges.taxeApprentissage), 150, yPosition, { align: 'right' });
+  } else {
+    pdf.text('ONFPP (1.5% du brut):', 20, yPosition);
+    pdf.text(formatCurrencyForPDF(calculation.employerCharges.onfpp), 150, yPosition, { align: 'right' });
+  }
   
   yPosition += 7;
   
   // Total charges patronales
   pdf.setFont(undefined, 'bold');
   pdf.text('Total charges patronales:', 20, yPosition);
-  const totalChargesPatronales = calculation.employerCharges.cnssEmployer + 
-                                 calculation.employerCharges.versementForfaitaire + 
-                                 calculation.employerCharges.onfpp;
-  pdf.text(formatCurrencyForPDF(totalChargesPatronales), 150, yPosition, { align: 'right' });
+  pdf.text(formatCurrencyForPDF(calculation.employerCharges.totalCharges), 150, yPosition, { align: 'right' });
   
   yPosition += 10;
   pdf.setFont(undefined, 'normal');
@@ -232,7 +240,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
   
   yPosition += 7;
   pdf.text('Charges patronales:', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(totalChargesPatronales), 150, yPosition, { align: 'right' });
+  pdf.text(formatCurrencyForPDF(calculation.employerCharges.totalCharges), 150, yPosition, { align: 'right' });
   
   yPosition += 7;
   pdf.setFont(undefined, 'bold');
@@ -247,11 +255,20 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
   const notes = [
     '* CNSS salariale: 5% (plafond 2.500.000 GNF, minimum 550.000 GNF)',
     '* CNSS patronale: 18% (mêmes plafonds)',
-    '* ONFPP: 1.5% du salaire brut (charge patronale)',
+  ];
+
+  // NOUVEAU : Note conditionnelle pour Taxe d'Apprentissage ou ONFPP
+  if (calculation.employerCharges.taxeApprentissage > 0) {
+    notes.push('* Taxe d\'Apprentissage: 3% du salaire brut (entreprises de moins de 30 salariés)');
+  } else {
+    notes.push('* ONFPP: 1.5% du salaire brut (entreprises de 30 salariés ou plus)');
+  }
+
+  notes.push(
     '* Primes exonérées: logement, transport, cherté de vie, nourriture (max 25% du brut)',
     '* Base VF = SI(Salaire<2.500.000; Salaire-(Salaire*6%); Salaire-(2.500.000*6%))',
     '* VF = 6% de la base VF'
-  ];
+  );
   
   if (calculation.overtimeHours > 0) {
     notes.push('* Heures sup. 1-4: 30% majoration, Heures sup. 5+: 60% majoration');

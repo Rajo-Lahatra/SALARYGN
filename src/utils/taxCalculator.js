@@ -44,11 +44,12 @@ export const TAX_BRACKETS = [
   }
 ];
 
-// Taux des cotisations sociales (CNSS et ONFPP)
+// Taux des cotisations sociales (CNSS, ONFPP et Taxe d'Apprentissage)
 export const SOCIAL_CONTRIBUTIONS = {
   CNSS_EMPLOYEE_RATE: 0.05, // 5% part salariale
   CNSS_EMPLOYER_RATE: 0.18, // 18% part patronale
   ONFPP_EMPLOYER_RATE: 0.015, // 1.5% ONFPP part patronale
+  TAXE_APPRENTISSAGE_RATE: 0.03, // 3% Taxe d'Apprentissage
 };
 
 // Calcul de la CNSS part salariale selon les règles guinéennes
@@ -91,6 +92,12 @@ export const calculateCNSSEmployer = (grossSalary) => {
 export const calculateONFPP = (grossSalary) => {
   if (!grossSalary || grossSalary <= 0) return 0;
   return grossSalary * SOCIAL_CONTRIBUTIONS.ONFPP_EMPLOYER_RATE;
+};
+
+// NOUVEAU : Calcul de la taxe d'apprentissage (3% du salaire brut)
+export const calculateTaxeApprentissage = (grossSalary) => {
+  if (!grossSalary || grossSalary <= 0) return 0;
+  return grossSalary * SOCIAL_CONTRIBUTIONS.TAXE_APPRENTISSAGE_RATE;
 };
 
 // Calcul de la base VF selon la formule Excel
@@ -141,18 +148,34 @@ export const calculateSocialContributions = (grossSalary) => {
   };
 };
 
-// Calcul des charges employeur (MISE À JOUR AVEC ONFPP)
-export const calculateEmployerCharges = (grossSalary) => {
+// NOUVEAU : Calcul des charges employeur avec sélection Taxe d'Apprentissage/ONFPP
+export const calculateEmployerCharges = (grossSalary, employeeCount = 0) => {
   const cnssEmployer = calculateCNSSEmployer(grossSalary);
   const versementForfaitaire = calculateVersementForfaitaire(grossSalary);
-  const onfpp = calculateONFPP(grossSalary);
+  
+  // Logique de sélection : Taxe d'Apprentissage si effectif < 30, sinon ONFPP
+  let taxeApprentissage = 0;
+  let onfpp = 0;
+  
+  if (employeeCount > 0 && employeeCount < 30) {
+    taxeApprentissage = calculateTaxeApprentissage(grossSalary);
+  } else if (employeeCount >= 30) {
+    onfpp = calculateONFPP(grossSalary);
+  }
+  
+  const totalCharges = cnssEmployer + versementForfaitaire + taxeApprentissage + onfpp;
+  const totalCost = grossSalary + totalCharges;
   
   return {
     cnssEmployer: Math.round(cnssEmployer),
     versementForfaitaire: Math.round(versementForfaitaire),
+    taxeApprentissage: Math.round(taxeApprentissage),
     onfpp: Math.round(onfpp),
     vfBase: Math.round(calculateVFBase(grossSalary)),
-    total: Math.round(grossSalary + cnssEmployer + versementForfaitaire + onfpp)
+    totalCharges: Math.round(totalCharges),
+    total: Math.round(totalCost),
+    appliedTax: employeeCount > 0 && employeeCount < 30 ? 'taxe_apprentissage' : 
+                employeeCount >= 30 ? 'onfpp' : 'aucune'
   };
 };
 
@@ -195,8 +218,8 @@ export const calculateOvertimePay = (baseSalary, overtimeData) => {
   };
 };
 
-// Calcul du salaire net complet
-export const calculateNetSalary = (employeeData) => {
+// NOUVEAU : Calcul du salaire net complet avec paramètre employeeCount
+export const calculateNetSalary = (employeeData, employeeCount = 0) => {
   const {
     baseSalary = 0,
     allowances = 0,
@@ -242,8 +265,8 @@ export const calculateNetSalary = (employeeData) => {
   // Salaire net
   const netSalary = grossSalary - totalDeductions;
 
-  // Charges employeur (MAINTENANT AVEC ONFPP)
-  const employerCharges = calculateEmployerCharges(grossSalary);
+  // NOUVEAU : Charges employeur avec sélection Taxe d'Apprentissage/ONFPP
+  const employerCharges = calculateEmployerCharges(grossSalary, employeeCount);
 
   return {
     grossSalary: Math.round(grossSalary),
@@ -266,7 +289,8 @@ export const calculateNetSalary = (employeeData) => {
     taxableIncome: Math.round(taxableIncome),
     employerCharges,
     exemptAllowancesCap: Math.round(grossSalary * 0.25),
-    exemptAllowancesTotal: Math.round(Math.min(exemptAllowances, grossSalary * 0.25))
+    exemptAllowancesTotal: Math.round(Math.min(exemptAllowances, grossSalary * 0.25)),
+    employeeCount: employeeCount // NOUVEAU : Inclure l'effectif dans le résultat
   };
 };
 

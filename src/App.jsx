@@ -132,6 +132,14 @@ function MainLayout() {
             } 
           />
           <Route 
+  path="/batch-import" 
+  element={
+    <ProtectedRoute>
+      <BatchSalaryImport />
+    </ProtectedRoute>
+  } 
+/>
+          <Route 
             path="/reports" 
             element={
               <ProtectedRoute>
