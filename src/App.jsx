@@ -5,6 +5,8 @@ import SalaryCalculator from './pages/SalaryCalculator';
 import EmployeeManagement from './pages/EmployeeManagement';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import BatchSalaryImport from './pages/BatchSalaryImport';
+import Reports from './pages/Reports';
 
 // Composant de navigation qui utilise le hook useAuth
 function Navigation() {
@@ -16,6 +18,7 @@ function Navigation() {
   const navigation = [
     { id: 'calculator', name: 'Calculateur', icon: '🧮', path: '/' },
     { id: 'employees', name: 'Employés', icon: '👥', path: '/employees' },
+    { id: 'batch', name: 'Import Batch', icon: '📊', path: '/batch-import' },
     { id: 'reports', name: 'Rapports', icon: '📊', path: '/reports' }
   ];
 
@@ -139,17 +142,14 @@ function MainLayout() {
     </ProtectedRoute>
   } 
 />
-          <Route 
-            path="/reports" 
-            element={
-              <ProtectedRoute>
-                <div className="max-w-7xl mx-auto px-4 py-8">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-4">Rapports</h1>
-                  <p className="text-gray-600">Module de rapports en développement...</p>
-                </div>
-              </ProtectedRoute>
-            } 
-          />
+<Route 
+  path="/reports" 
+  element={
+    <ProtectedRoute>
+      <Reports />
+    </ProtectedRoute>
+  } 
+/>
           <Route path="/login" element={<Login />} />
           
           {/* Route de fallback - redirection vers la page de connexion ou calculateur */}
