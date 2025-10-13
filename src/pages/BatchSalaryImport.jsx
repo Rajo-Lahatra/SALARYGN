@@ -66,20 +66,30 @@ const BatchSalaryImport = () => {
 
       for (const employeeData of importData) {
         try {
+          // Construction du nom complet
+          const fullName = `${employeeData.nom || ''} ${employeeData.prenom || ''}`.trim();
+          
+          // Calcul des autres primes (non-exonérées) qui incluent heures supplémentaires et avantages en nature
+          const autresPrimes = parseFloat(employeeData.autresPrimes) || 0;
+          const heuresSupplementaires = parseFloat(employeeData.heuresSupplementaires) || 0;
+          const avantagesNature = parseFloat(employeeData.avantagesNature) || 0;
+          
+          const totalAllowances = autresPrimes + heuresSupplementaires + avantagesNature;
+
           const salaryData = {
-            baseSalary: parseFloat(employeeData.baseSalary) || 0,
-            allowances: parseFloat(employeeData.allowances) || 0,
-            bonus: parseFloat(employeeData.bonus) || 0,
-            thirteenthMonth: parseFloat(employeeData.thirteenthMonth) || 0,
-            housingAllowance: parseFloat(employeeData.housingAllowance) || 0,
-            transportAllowance: parseFloat(employeeData.transportAllowance) || 0,
-            livingAllowance: parseFloat(employeeData.livingAllowance) || 0,
-            foodAllowance: parseFloat(employeeData.foodAllowance) || 0,
+            baseSalary: parseFloat(employeeData.salaireBase) || 0,
+            housingAllowance: parseFloat(employeeData.primeLogement) || 0,
+            livingAllowance: parseFloat(employeeData.primeChereteVie) || 0,
+            transportAllowance: parseFloat(employeeData.primeTransport) || 0,
+            foodAllowance: parseFloat(employeeData.primeNourriture) || 0,
+            allowances: totalAllowances,
+            bonus: 0,
+            thirteenthMonth: 0,
             overtimeData: {
-              normal1to4: parseFloat(employeeData.overtimeNormal1to4) || 0,
-              normal5plus: parseFloat(employeeData.overtimeNormal5plus) || 0,
-              night1to4: parseFloat(employeeData.overtimeNight1to4) || 0,
-              night5plus: parseFloat(employeeData.overtimeNight5plus) || 0
+              normal1to4: 0,
+              normal5plus: 0,
+              night1to4: 0,
+              night5plus: 0
             }
           };
 
@@ -87,29 +97,34 @@ const BatchSalaryImport = () => {
 
           results.push({
             employee: {
-              fullName: employeeData.fullName,
-              employeeId: employeeData.employeeId,
-              position: employeeData.position,
-              department: employeeData.department,
-              employmentType: employeeData.employmentType
+              fullName: fullName,
+              employeeId: employeeData.matricule || '',
+              position: '', // À définir si nécessaire
+              department: '', // À définir si nécessaire
+              employmentType: 'CDI'
             },
             salaryData,
-            calculation
+            calculation,
+            details: {
+              autresPrimes,
+              heuresSupplementaires,
+              avantagesNature
+            }
           });
 
           // Sauvegarder l'employé si l'utilisateur est connecté
-          if (user) {
+          if (user && fullName) {
             await saveEmployee({
-              fullName: employeeData.fullName,
-              employeeId: employeeData.employeeId,
-              position: employeeData.position,
-              department: employeeData.department,
-              employmentType: employeeData.employmentType,
-              baseSalary: employeeData.baseSalary
+              fullName: fullName,
+              employeeId: employeeData.matricule || '',
+              position: '',
+              department: '',
+              employmentType: 'CDI',
+              baseSalary: employeeData.salaireBase
             });
           }
         } catch (err) {
-          console.error(`Erreur avec l'employé ${employeeData.fullName}:`, err);
+          console.error(`Erreur avec l'employé ${employeeData.nom} ${employeeData.prenom}:`, err);
         }
       }
 
@@ -125,9 +140,17 @@ const BatchSalaryImport = () => {
     if (calculations.length === 0) return;
 
     const headers = [
-      'Nom Complet',
       'Matricule',
-      'Poste',
+      'Nom',
+      'Prénom',
+      'Salaire Base',
+      'Prime Logement',
+      'Prime Cherté Vie',
+      'Prime Transport',
+      'Prime Nourriture',
+      'Autres Primes',
+      'Heures Supplémentaires',
+      'Avantages Nature',
       'Salaire Brut',
       'Salaire Net',
       'Impôt RTS',
@@ -139,9 +162,17 @@ const BatchSalaryImport = () => {
     const csvContent = [
       headers.join(','),
       ...calculations.map(item => [
-        `"${item.employee.fullName}"`,
         `"${item.employee.employeeId}"`,
-        `"${item.employee.position}"`,
+        `"${item.employee.fullName.split(' ')[0]}"`, // Nom
+        `"${item.employee.fullName.split(' ').slice(1).join(' ')}"`, // Prénom
+        item.salaryData.baseSalary,
+        item.salaryData.housingAllowance,
+        item.salaryData.livingAllowance,
+        item.salaryData.transportAllowance,
+        item.salaryData.foodAllowance,
+        item.details.autresPrimes,
+        item.details.heuresSupplementaires,
+        item.details.avantagesNature,
         item.calculation.grossSalary,
         item.calculation.netSalary,
         item.calculation.incomeTax,
@@ -164,28 +195,24 @@ const BatchSalaryImport = () => {
 
   const downloadTemplate = () => {
     const templateHeaders = [
-      'fullName',
-      'employeeId',
-      'position',
-      'department',
-      'employmentType',
-      'baseSalary',
-      'housingAllowance',
-      'transportAllowance',
-      'livingAllowance',
-      'foodAllowance',
-      'allowances',
-      'bonus',
-      'thirteenthMonth',
-      'overtimeNormal1to4',
-      'overtimeNormal5plus',
-      'overtimeNight1to4',
-      'overtimeNight5plus'
+      'matricule',
+      'nom',
+      'prenom',
+      'salaireBase',
+      'primeLogement',
+      'primeChereteVie',
+      'primeTransport',
+      'primeNourriture',
+      'autresPrimes',
+      'heuresSupplementaires',
+      'avantagesNature'
     ];
 
     const templateContent = [
       templateHeaders.join(','),
-      'Mamadou Diallo,EMP001,Comptable,Finance,CDI,5000000,250000,100000,150000,80000,100000,500000,416667,0,0,0,0'
+      'EMP001,Diallo,Mamadou,5000000,250000,150000,100000,80000,100000,50000,0',
+      'EMP002,Conde,Fatou,4500000,200000,120000,80000,60000,80000,40000,0',
+      'EMP003,Bah,Ibrahima,6000000,300000,180000,120000,100000,120000,60000,0'
     ].join('\n');
 
     const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
@@ -248,7 +275,7 @@ const BatchSalaryImport = () => {
                     <span>Télécharger Template CSV</span>
                   </Button>
                   <p className="text-xs text-gray-500 mt-2">
-                    Utilisez ce template pour formater correctement vos données
+                    Utilisez ce template avec les colonnes adaptées à votre structure
                   </p>
                 </div>
 
@@ -280,6 +307,50 @@ const BatchSalaryImport = () => {
               </div>
             </div>
 
+            {/* Instructions */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold mb-4">Structure du Fichier</h2>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="font-medium">Colonne</div>
+                  <div className="font-medium">Description</div>
+                  
+                  <div className="bg-gray-50 p-2">matricule</div>
+                  <div className="bg-gray-50 p-2">Numéro matricule de l'employé</div>
+                  
+                  <div className="bg-gray-50 p-2">nom</div>
+                  <div className="bg-gray-50 p-2">Nom de famille</div>
+                  
+                  <div className="bg-gray-50 p-2">prenom</div>
+                  <div className="bg-gray-50 p-2">Prénom</div>
+                  
+                  <div className="bg-gray-50 p-2">salaireBase</div>
+                  <div className="bg-gray-50 p-2">Salaire de base (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">primeLogement</div>
+                  <div className="bg-gray-50 p-2">Prime de logement (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">primeChereteVie</div>
+                  <div className="bg-gray-50 p-2">Prime de cherté de vie (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">primeTransport</div>
+                  <div className="bg-gray-50 p-2">Prime de transport (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">primeNourriture</div>
+                  <div className="bg-gray-50 p-2">Prime de nourriture (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">autresPrimes</div>
+                  <div className="bg-gray-50 p-2">Autres primes non-exonérées (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">heuresSupplementaires</div>
+                  <div className="bg-gray-50 p-2">Montant heures supplémentaires (GNF)</div>
+                  
+                  <div className="bg-gray-50 p-2">avantagesNature</div>
+                  <div className="bg-gray-50 p-2">Avantages en nature (GNF)</div>
+                </div>
+              </div>
+            </div>
+
             {/* Aperçu des données importées */}
             {importData.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -291,20 +362,20 @@ const BatchSalaryImport = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left">Nom</th>
                         <th className="px-4 py-2 text-left">Matricule</th>
-                        <th className="px-4 py-2 text-left">Poste</th>
+                        <th className="px-4 py-2 text-left">Nom</th>
+                        <th className="px-4 py-2 text-left">Prénom</th>
                         <th className="px-4 py-2 text-left">Salaire Base</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {importData.slice(0, 5).map((employee, index) => (
                         <tr key={index}>
-                          <td className="px-4 py-2">{employee.fullName}</td>
-                          <td className="px-4 py-2">{employee.employeeId}</td>
-                          <td className="px-4 py-2">{employee.position}</td>
+                          <td className="px-4 py-2">{employee.matricule}</td>
+                          <td className="px-4 py-2">{employee.nom}</td>
+                          <td className="px-4 py-2">{employee.prenom}</td>
                           <td className="px-4 py-2">
-                            {parseFloat(employee.baseSalary).toLocaleString('fr-GN')} FG
+                            {parseFloat(employee.salaireBase || 0).toLocaleString('fr-GN')} FG
                           </td>
                         </tr>
                       ))}
@@ -373,7 +444,7 @@ const BatchSalaryImport = () => {
                               <td className="px-4 py-2">
                                 <div>
                                   <p className="font-medium">{item.employee.fullName}</p>
-                                  <p className="text-xs text-gray-500">{item.employee.position}</p>
+                                  <p className="text-xs text-gray-500">{item.employee.employeeId}</p>
                                 </div>
                               </td>
                               <td className="px-4 py-2 text-right">
@@ -390,6 +461,45 @@ const BatchSalaryImport = () => {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+
+                {/* Détails des calculs */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h2 className="text-xl font-semibold mb-4">Détails des Primes et Suppléments</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Employé</th>
+                          <th className="px-4 py-2 text-right">Prime Logement</th>
+                          <th className="px-4 py-2 text-right">Prime Transport</th>
+                          <th className="px-4 py-2 text-right">Heures Supp</th>
+                          <th className="px-4 py-2 text-right">Autres Primes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {calculations.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-2">
+                              <p className="font-medium">{item.employee.fullName}</p>
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.salaryData.housingAllowance.toLocaleString('fr-GN')} FG
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.salaryData.transportAllowance.toLocaleString('fr-GN')} FG
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.details.heuresSupplementaires.toLocaleString('fr-GN')} FG
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.details.autresPrimes.toLocaleString('fr-GN')} FG
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </>
