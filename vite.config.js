@@ -1,19 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: [
-        // Ajouter ici les modules que vous voulez externaliser explicitement
-      ],
-    },
+      external: []
+    }
   },
-  resolve: {
-    alias: {
-      // Assurer que les imports sont résolus correctement
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
     },
   },
 })
