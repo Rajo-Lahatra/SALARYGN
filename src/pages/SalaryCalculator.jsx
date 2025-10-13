@@ -738,6 +738,22 @@ const SalaryCalculator = () => {
                   </div>
                 </div>
               </div>
+
+              {/* NOUVEAU : Information ONFPP */}
+              <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Building className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-purple-800">Cotisation ONFPP</h4>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Part patronale: 1.5% du salaire brut
+                    </p>
+                    <p className="text-sm text-purple-700">
+                      Office National de Formation Professionnelle et de Perfectionnement
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -953,7 +969,7 @@ const SalaryCalculator = () => {
                   </div>
                 </div>
 
-                {/* Charges Employeur */}
+                {/* Charges Employeur - MISE À JOUR AVEC ONFPP */}
                 <div className="bg-white rounded-lg shadow-sm border p-6">
                   <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
                     <Building className="h-5 w-5 text-yellow-600" />
@@ -981,13 +997,28 @@ const SalaryCalculator = () => {
                       </p>
                     </div>
 
+                    {/* NOUVEAU : ONFPP */}
+                    <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-purple-800">ONFPP</p>
+                        <p className="text-sm text-purple-700">1.5% du salaire brut</p>
+                      </div>
+                      <p className="text-lg font-bold text-purple-600">
+                        {formatCurrency(calculation.employerCharges.onfpp)}
+                      </p>
+                    </div>
+
                     <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                       <div>
                         <p className="font-medium text-green-800">Total Charges Patronales</p>
-                        <p className="text-sm text-green-700">CNSS + VF</p>
+                        <p className="text-sm text-green-700">CNSS + VF + ONFPP</p>
                       </div>
                       <p className="text-lg font-bold text-green-600">
-                        {formatCurrency(calculation.employerCharges.cnssEmployer + calculation.employerCharges.versementForfaitaire)}
+                        {formatCurrency(
+                          calculation.employerCharges.cnssEmployer + 
+                          calculation.employerCharges.versementForfaitaire + 
+                          calculation.employerCharges.onfpp
+                        )}
                       </p>
                     </div>
 
@@ -1008,7 +1039,7 @@ const SalaryCalculator = () => {
 
                     <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                       <p className="text-sm text-blue-700 text-center">
-                        <strong>Coût total = Salaire brut + CNSS patronale + Versement Forfaitaire</strong>
+                        <strong>Coût total = Salaire brut + CNSS patronale + Versement Forfaitaire + ONFPP</strong>
                       </p>
                     </div>
                   </div>

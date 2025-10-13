@@ -180,7 +180,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
 
   // Vérifier si on a assez d'espace pour les charges employeur
   const remainingSpace = pageHeight - yPosition - 40;
-  const employerChargesHeight = 45;
+  const employerChargesHeight = 55; // Augmenté pour inclure ONFPP
   
   if (remainingSpace < employerChargesHeight) {
     pdf.addPage();
@@ -189,7 +189,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
     yPosition += 20;
   }
 
-  // CHARGES PATRONALES
+  // CHARGES PATRONALES - MISE À JOUR AVEC ONFPP
   pdf.setFontSize(12);
   pdf.setTextColor(139, 69, 19);
   pdf.text('CHARGES PATRONALES', 20, yPosition);
@@ -209,10 +209,18 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
   
   yPosition += 7;
   
+  // NOUVEAU : ONFPP
+  pdf.text('ONFPP (1.5% du brut):', 20, yPosition);
+  pdf.text(formatCurrencyForPDF(calculation.employerCharges.onfpp), 150, yPosition, { align: 'right' });
+  
+  yPosition += 7;
+  
   // Total charges patronales
   pdf.setFont(undefined, 'bold');
   pdf.text('Total charges patronales:', 20, yPosition);
-  const totalChargesPatronales = calculation.employerCharges.cnssEmployer + calculation.employerCharges.versementForfaitaire;
+  const totalChargesPatronales = calculation.employerCharges.cnssEmployer + 
+                                 calculation.employerCharges.versementForfaitaire + 
+                                 calculation.employerCharges.onfpp;
   pdf.text(formatCurrencyForPDF(totalChargesPatronales), 150, yPosition, { align: 'right' });
   
   yPosition += 10;
@@ -239,6 +247,7 @@ export const generatePayslipPDF = async (employee, calculation, period, employer
   const notes = [
     '* CNSS salariale: 5% (plafond 2.500.000 GNF, minimum 550.000 GNF)',
     '* CNSS patronale: 18% (mêmes plafonds)',
+    '* ONFPP: 1.5% du salaire brut (charge patronale)',
     '* Primes exonérées: logement, transport, cherté de vie, nourriture (max 25% du brut)',
     '* Base VF = SI(Salaire<2.500.000; Salaire-(Salaire*6%); Salaire-(2.500.000*6%))',
     '* VF = 6% de la base VF'

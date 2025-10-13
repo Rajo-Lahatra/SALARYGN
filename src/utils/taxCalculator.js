@@ -44,10 +44,11 @@ export const TAX_BRACKETS = [
   }
 ];
 
-// Taux des cotisations sociales (CNSS seulement)
+// Taux des cotisations sociales (CNSS et ONFPP)
 export const SOCIAL_CONTRIBUTIONS = {
   CNSS_EMPLOYEE_RATE: 0.05, // 5% part salariale
   CNSS_EMPLOYER_RATE: 0.18, // 18% part patronale
+  ONFPP_EMPLOYER_RATE: 0.015, // 1.5% ONFPP part patronale
 };
 
 // Calcul de la CNSS part salariale selon les règles guinéennes
@@ -84,6 +85,12 @@ export const calculateCNSSEmployer = (grossSalary) => {
   }
   
   return base * SOCIAL_CONTRIBUTIONS.CNSS_EMPLOYER_RATE;
+};
+
+// Calcul de la cotisation ONFPP (1.5% du salaire brut)
+export const calculateONFPP = (grossSalary) => {
+  if (!grossSalary || grossSalary <= 0) return 0;
+  return grossSalary * SOCIAL_CONTRIBUTIONS.ONFPP_EMPLOYER_RATE;
 };
 
 // Calcul de la base VF selon la formule Excel
@@ -134,16 +141,18 @@ export const calculateSocialContributions = (grossSalary) => {
   };
 };
 
-// Calcul des charges employeur
+// Calcul des charges employeur (MISE À JOUR AVEC ONFPP)
 export const calculateEmployerCharges = (grossSalary) => {
   const cnssEmployer = calculateCNSSEmployer(grossSalary);
   const versementForfaitaire = calculateVersementForfaitaire(grossSalary);
+  const onfpp = calculateONFPP(grossSalary);
   
   return {
     cnssEmployer: Math.round(cnssEmployer),
     versementForfaitaire: Math.round(versementForfaitaire),
+    onfpp: Math.round(onfpp),
     vfBase: Math.round(calculateVFBase(grossSalary)),
-    total: Math.round(grossSalary + cnssEmployer + versementForfaitaire)
+    total: Math.round(grossSalary + cnssEmployer + versementForfaitaire + onfpp)
   };
 };
 
@@ -233,7 +242,7 @@ export const calculateNetSalary = (employeeData) => {
   // Salaire net
   const netSalary = grossSalary - totalDeductions;
 
-  // Charges employeur
+  // Charges employeur (MAINTENANT AVEC ONFPP)
   const employerCharges = calculateEmployerCharges(grossSalary);
 
   return {
