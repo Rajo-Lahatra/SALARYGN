@@ -548,8 +548,96 @@ const SalaryCalculator = () => {
               )}
             </div>
 
-            {/* Le reste du code (Informations employé, Données salariales, etc.) reste inchangé */}
-            {/* ... */}
+                        {/* Informations employé */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <span>Informations Employé</span>
+                </h2>
+                <div className="flex space-x-2">
+                  {user && employees.length > 0 && (
+                    <select 
+                      onChange={(e) => {
+                        const selected = employees.find(emp => emp.id === e.target.value);
+                        if (selected) handleLoadEmployee(selected);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      defaultValue=""
+                    >
+                      <option value="">Charger un employé...</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.full_name} {emp.employee_id ? `(${emp.employee_id})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {user && (
+                    <Button
+                      onClick={handleSaveEmployee}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center space-x-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      <span>Sauvegarder</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom Complet *
+                  </label>
+                  <Input
+                    value={employee.fullName}
+                    onChange={(e) => handleEmployeeChange('fullName', e.target.value)}
+                    placeholder="Ex: Mamadou Diallo"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Matricule
+                  </label>
+                  <Input
+                    value={employee.employeeId}
+                    onChange={(e) => handleEmployeeChange('employeeId', e.target.value)}
+                    placeholder="EMP001"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Poste *
+                  </label>
+                  <Input
+                    value={employee.position}
+                    onChange={(e) => handleEmployeeChange('position', e.target.value)}
+                    placeholder="Ex: Comptable Senior"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Département
+                  </label>
+                  <Input
+                    value={employee.department}
+                    onChange={(e) => handleEmployeeChange('department', e.target.value)}
+                    placeholder="Ex: Finance"
+                  />
+                </div>
+              </div>
+              {!user && (
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note :</strong> Connectez-vous pour sauvegarder les profils employés et charger des employés existants.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Colonne droite - Résultats et Actions */}
