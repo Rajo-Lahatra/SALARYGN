@@ -161,7 +161,7 @@ function MainLayout() {
         <footer className="bg-white border-t mt-12">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <div className="text-center text-sm text-gray-600">
-              <p>© 2024 SALARYGN - Conforme au barème fiscal guinéen</p>
+              <p>© 2025 Outil de calcul automatique des impôts et taxes sur salaire - Conforme au barème fiscal guinéen</p>
               <p className="mt-1">Tranches: 0% (0-1M), 5% (1M-3M), 8% (3M-5M), 10% (5M-10M), 15% (10M-20M), 20% (20M+)</p>
             </div>
           </div>
