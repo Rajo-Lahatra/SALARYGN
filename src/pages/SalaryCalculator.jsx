@@ -46,10 +46,10 @@ const SalaryCalculator = () => {
     overtimeNight5plus: ''
   });
 
-  // NOUVEAU : État pour la période de paie
+  // État pour la période de paie
   const [payPeriod, setPayPeriod] = useState({
-    month: new Date().getMonth() + 1, // Mois actuel (1-12)
-    year: new Date().getFullYear() // Année actuelle
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear()
   });
 
   const [calculation, setCalculation] = useState(null);
@@ -117,7 +117,7 @@ const SalaryCalculator = () => {
     setSalaryData(prev => ({ ...prev, [field]: value }));
   };
 
-  // NOUVEAU : Gestion du changement de période
+  // Gestion du changement de période
   const handlePeriodChange = (field, value) => {
     setPayPeriod(prev => ({ 
       ...prev, 
@@ -194,7 +194,7 @@ const SalaryCalculator = () => {
                 employee,
                 salaryData,
                 employer,
-                payPeriod // NOUVEAU : inclure la période
+                payPeriod
               },
               result,
               period: `${payPeriod.year}-${payPeriod.month.toString().padStart(2, '0')}`
@@ -225,7 +225,7 @@ const SalaryCalculator = () => {
     }
   };
 
-  // NOUVEAU : Formater la période pour l'affichage
+  // Formater la période pour l'affichage
   const getFormattedPeriod = () => {
     const monthNames = [
       'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -291,7 +291,7 @@ const SalaryCalculator = () => {
 
   const appliedTax = getAppliedTax();
 
-  // NOUVEAU : Générer les options pour les mois et années
+  // Générer les options pour les mois et années
   const monthOptions = [
     { value: 1, label: 'Janvier' },
     { value: 2, label: 'Février' },
@@ -346,7 +346,7 @@ const SalaryCalculator = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Colonne gauche - Formulaire */}
           <div className="lg:col-span-2 space-y-6">
-            {/* NOUVEAU : Sélection de période */}
+            {/* Sélection de période */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-blue-600" />
@@ -393,7 +393,6 @@ const SalaryCalculator = () => {
               </div>
             </div>
 
-            {/* Le reste du code reste inchangé */}
             {/* Informations employeur */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex justify-between items-center mb-4">
@@ -548,7 +547,7 @@ const SalaryCalculator = () => {
               )}
             </div>
 
-                        {/* Informations employé */}
+            {/* INFORMATIONS EMPLOYÉ - SECTION RÉTABLIE */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold flex items-center space-x-2">
@@ -638,6 +637,274 @@ const SalaryCalculator = () => {
                 </div>
               )}
             </div>
+
+            {/* Données salariales */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold mb-4">Données Salariales</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Salaire de Base (GNF) *
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.baseSalary}
+                    onChange={(e) => handleSalaryChange('baseSalary', e.target.value)}
+                    placeholder="5000000"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prime de Logement (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.housingAllowance}
+                    onChange={(e) => handleSalaryChange('housingAllowance', e.target.value)}
+                    placeholder="250000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prime de Transport (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.transportAllowance}
+                    onChange={(e) => handleSalaryChange('transportAllowance', e.target.value)}
+                    placeholder="100000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prime de Cherté de Vie (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.livingAllowance}
+                    onChange={(e) => handleSalaryChange('livingAllowance', e.target.value)}
+                    placeholder="150000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prime de Nourriture (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.foodAllowance}
+                    onChange={(e) => handleSalaryChange('foodAllowance', e.target.value)}
+                    placeholder="80000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Autres Indemnités (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.allowances}
+                    onChange={(e) => handleSalaryChange('allowances', e.target.value)}
+                    placeholder="100000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prime/Bonus (GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.bonus}
+                    onChange={(e) => handleSalaryChange('bonus', e.target.value)}
+                    placeholder="500000"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    13ème Mois (Prorata GNF)
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.thirteenthMonth}
+                    onChange={(e) => handleSalaryChange('thirteenthMonth', e.target.value)}
+                    placeholder="416667"
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Note :</strong> Les primes de logement, transport, cherté de vie et nourriture sont exonérées d'impôt (dans la limite de 25% du salaire brut total).
+                </p>
+              </div>
+            </div>
+
+            {/* Heures supplémentaires détaillées */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <Sun className="h-5 w-5 text-orange-600" />
+                <span>Heures Supplémentaires</span>
+              </h2>
+              
+              <div className="mb-4 p-4 bg-orange-50 rounded-lg">
+                <h3 className="font-semibold text-orange-800 mb-2">Taux légaux des heures supplémentaires</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between">
+                    <span>Heures 1-4 (jour):</span>
+                    <span className="font-semibold">130% (30% majoration)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Heures 5+ (jour):</span>
+                    <span className="font-semibold">160% (60% majoration)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Heures 1-4 (nuit):</span>
+                    <span className="font-semibold">150% (50% majoration)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Heures 5+ (nuit):</span>
+                    <span className="font-semibold">180% (80% majoration)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Heures sup. normales 1-4
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.overtimeNormal1to4}
+                    onChange={(e) => handleSalaryChange('overtimeNormal1to4', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Majoration: 30%</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Heures sup. normales 5+
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.overtimeNormal5plus}
+                    onChange={(e) => handleSalaryChange('overtimeNormal5plus', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Majoration: 60%</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Heures sup. nuit 1-4
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.overtimeNight1to4}
+                    onChange={(e) => handleSalaryChange('overtimeNight1to4', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Majoration: 50% (30%+20%)</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Heures sup. nuit 5+
+                  </label>
+                  <Input
+                    type="number"
+                    value={salaryData.overtimeNight5plus}
+                    onChange={(e) => handleSalaryChange('overtimeNight5plus', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Majoration: 80% (60%+20%)</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Barème fiscal */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold mb-4">Barème Fiscal en Vigueur</h2>
+              <div className="space-y-3">
+                {TAX_BRACKETS.map((bracket) => (
+                  <div key={bracket.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <span className="font-medium">{bracket.name}</span>
+                      <p className="text-sm text-gray-600">
+                        {bracket.minAmount.toLocaleString()} - {bracket.maxAmount ? bracket.maxAmount.toLocaleString() : '+'} GNF
+                      </p>
+                    </div>
+                    <span className="font-bold text-blue-600">{bracket.rate}%</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Information CNSS */}
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Building className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-800">Cotisations CNSS</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Part salariale: 5% (plafond: 2.500.000 GNF, minimum: 550.000 GNF)
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Part patronale: 18% (mêmes plafonds)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Information Versement Forfaitaire */}
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Building className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-yellow-800">Versement Forfaitaire</h4>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Base VF = SI(Salaire {'<'} 2.500.000; Salaire-(Salaire*6%); Salaire-(2.500.000*6%))
+                    </p>
+                    <p className="text-sm text-yellow-700">
+                      VF = 6% de la base VF
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Information ONFPP/Taxe d'Apprentissage */}
+              <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Building className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-purple-800">
+                      {appliedTax?.name === 'Taxe d\'Apprentissage' ? 'Taxe d\'Apprentissage' : 'Cotisation ONFPP'}
+                    </h4>
+                    <p className="text-sm text-purple-700 mt-1">
+                      {appliedTax?.name === 'Taxe d\'Apprentissage' 
+                        ? 'Part patronale: 3% du salaire brut (entreprises de moins de 30 salariés)'
+                        : 'Part patronale: 1.5% du salaire brut (entreprises de 30 salariés ou plus)'
+                      }
+                    </p>
+                    <p className="text-sm text-purple-700">
+                      {appliedTax?.name === 'Taxe d\'Apprentissage' 
+                        ? 'Taxe d\'Apprentissage - Formation professionnelle'
+                        : 'Office National de Formation Professionnelle et de Perfectionnement'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Colonne droite - Résultats et Actions */}
@@ -682,8 +949,261 @@ const SalaryCalculator = () => {
               </div>
             </div>
 
-            {/* Résultats - Le code reste inchangé */}
-            {/* ... */}
+            {/* Résultats */}
+            {calculation && (
+              <div className="space-y-6">
+                {/* Résumé Employé */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h2 className="text-xl font-semibold mb-4">Résultats du Calcul</h2>
+                  
+                  {/* Résumé */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Salaire Brut</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {formatCurrency(calculation.grossSalary)}
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Salaire Net</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatCurrency(calculation.netSalary)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Détails des gains */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-2">Gains</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Salaire de base:</span>
+                        <span>{formatCurrency(calculation.baseSalary)}</span>
+                      </div>
+                      
+                      {/* Affichage individuel des primes exonérées */}
+                      {calculation.housingAllowance > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Prime de logement:</span>
+                          <span>{formatCurrency(calculation.housingAllowance)}</span>
+                        </div>
+                      )}
+                      {calculation.transportAllowance > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Prime de transport:</span>
+                          <span>{formatCurrency(calculation.transportAllowance)}</span>
+                        </div>
+                      )}
+                      {calculation.livingAllowance > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Prime de cherté de vie:</span>
+                          <span>{formatCurrency(calculation.livingAllowance)}</span>
+                        </div>
+                      )}
+                      {calculation.foodAllowance > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Prime de nourriture:</span>
+                          <span>{formatCurrency(calculation.foodAllowance)}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between">
+                        <span>Autres indemnités:</span>
+                        <span>{formatCurrency(calculation.allowances)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Prime/Bonus:</span>
+                        <span>{formatCurrency(calculation.bonus)}</span>
+                      </div>
+                      
+                      {/* Détail des heures supplémentaires */}
+                      {calculation.overtimeHours > 0 && (
+                        <>
+                          <div className="flex justify-between text-orange-600">
+                            <span>Heures supplémentaires total:</span>
+                            <span>{formatCurrency(calculation.overtimePay)}</span>
+                          </div>
+                          {calculation.overtimeBreakdown.normal1to4 > 0 && (
+                            <div className="flex justify-between text-orange-600 pl-4">
+                              <span className="text-xs">Heures 1-4 (30%):</span>
+                              <span className="text-xs">{formatCurrency(calculation.overtimeBreakdown.normal1to4)}</span>
+                            </div>
+                          )}
+                          {calculation.overtimeBreakdown.normal5plus > 0 && (
+                            <div className="flex justify-between text-orange-600 pl-4">
+                              <span className="text-xs">Heures 5+ (60%):</span>
+                              <span className="text-xs">{formatCurrency(calculation.overtimeBreakdown.normal5plus)}</span>
+                            </div>
+                          )}
+                          {calculation.overtimeBreakdown.night1to4 > 0 && (
+                            <div className="flex justify-between text-orange-600 pl-4">
+                              <span className="text-xs">Heures nuit 1-4 (50%):</span>
+                              <span className="text-xs">{formatCurrency(calculation.overtimeBreakdown.night1to4)}</span>
+                            </div>
+                          )}
+                          {calculation.overtimeBreakdown.night5plus > 0 && (
+                            <div className="flex justify-between text-orange-600 pl-4">
+                              <span className="text-xs">Heures nuit 5+ (80%):</span>
+                              <span className="text-xs">{formatCurrency(calculation.overtimeBreakdown.night5plus)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      <div className="flex justify-between">
+                        <span>13ème mois:</span>
+                        <span>{formatCurrency(calculation.thirteenthMonth)}</span>
+                      </div>
+                      
+                      {/* Résumé des primes exonérées */}
+                      {(calculation.housingAllowance > 0 || calculation.transportAllowance > 0 || calculation.livingAllowance > 0 || calculation.foodAllowance > 0) && (
+                        <>
+                          <div className="flex justify-between text-green-600 border-t pt-2">
+                            <span className="font-medium">Total primes exonérées:</span>
+                            <span className="font-medium">{formatCurrency(calculation.exemptAllowances)}</span>
+                          </div>
+                          <div className="flex justify-between text-green-600 text-xs">
+                            <span>Plafond utilisé (25% du brut):</span>
+                            <span>{formatCurrency(calculation.exemptAllowancesTotal)} / {formatCurrency(calculation.exemptAllowancesCap)}</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="flex justify-between border-t pt-2 font-medium">
+                        <span>Total brut:</span>
+                        <span>{formatCurrency(calculation.grossSalary)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Détails du calcul RTS */}
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold mb-2">Calcul du Salaire Imposable (RTS)</h3>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Salaire brut:</span>
+                        <span>{formatCurrency(calculation.grossSalary)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>CNSS salariale:</span>
+                        <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>Primes exonérées (max 25%):</span>
+                        <span>- {formatCurrency(calculation.exemptAllowancesTotal)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1 font-medium">
+                        <span>Salaire imposable:</span>
+                        <span>{formatCurrency(calculation.taxableIncome)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Détails des déductions */}
+                  <div>
+                    <h3 className="font-semibold mb-2">Déductions Salariales</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between text-red-600">
+                        <span>Impôt sur le revenu (RTS):</span>
+                        <span>- {formatCurrency(calculation.incomeTax)}</span>
+                      </div>
+                      <div className="flex justify-between text-orange-600">
+                        <span>Cotisation CNSS:</span>
+                        <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2 font-medium text-red-600">
+                        <span>Total déductions:</span>
+                        <span>- {formatCurrency(calculation.totalDeductions)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Charges Employeur */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                    <Building className="h-5 w-5 text-yellow-600" />
+                    <span>Charges Patronales</span>
+                  </h2>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-blue-800">CNSS Patronale</p>
+                        <p className="text-sm text-blue-700">18% (plafonnée)</p>
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">
+                        {formatCurrency(calculation.employerCharges.cnssEmployer)}
+                      </p>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-yellow-800">Versement Forfaitaire</p>
+                        <p className="text-sm text-yellow-700">6% de la base VF</p>
+                      </div>
+                      <p className="text-lg font-bold text-yellow-600">
+                        {formatCurrency(calculation.employerCharges.versementForfaitaire)}
+                      </p>
+                    </div>
+
+                    {/* Affichage dynamique : Taxe d'Apprentissage ou ONFPP */}
+                    {calculation.employerCharges.taxeApprentissage > 0 ? (
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-purple-800">Taxe d'Apprentissage</p>
+                          <p className="text-sm text-purple-700">3% du salaire brut</p>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600">
+                          {formatCurrency(calculation.employerCharges.taxeApprentissage)}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-purple-800">ONFPP</p>
+                          <p className="text-sm text-purple-700">1.5% du salaire brut</p>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600">
+                          {formatCurrency(calculation.employerCharges.onfpp)}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-green-800">Total Charges Patronales</p>
+                        <p className="text-sm text-green-700">CNSS + VF + {calculation.employerCharges.taxeApprentissage > 0 ? 'Taxe Apprentissage' : 'ONFPP'}</p>
+                      </div>
+                      <p className="text-lg font-bold text-green-600">
+                        {formatCurrency(calculation.employerCharges.totalCharges)}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600">Salaire Brut</p>
+                        <p className="font-bold text-gray-800">
+                          {formatCurrency(calculation.grossSalary)}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                        <p className="text-sm text-gray-600">Coût Total Employeur</p>
+                        <p className="text-lg font-bold text-yellow-600">
+                          {formatCurrency(calculation.employerCharges.total)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-700 text-center">
+                        <strong>Coût total = Salaire brut + CNSS patronale + Versement Forfaitaire + {calculation.employerCharges.taxeApprentissage > 0 ? 'Taxe d\'Apprentissage' : 'ONFPP'}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
