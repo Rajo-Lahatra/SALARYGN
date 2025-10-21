@@ -1056,18 +1056,23 @@ const SalaryCalculator = () => {
                       </div>
                       
                       {/* Résumé des primes exonérées */}
-                      {(calculation.housingAllowance > 0 || calculation.transportAllowance > 0 || calculation.livingAllowance > 0 || calculation.foodAllowance > 0) && (
-                        <>
-                          <div className="flex justify-between text-green-600 border-t pt-2">
-                            <span className="font-medium">Total primes exonérées:</span>
-                            <span className="font-medium">{formatCurrency(calculation.exemptAllowances)}</span>
-                          </div>
-                          <div className="flex justify-between text-green-600 text-xs">
-                            <span>Plafond utilisé (25% du brut):</span>
-                            <span>{formatCurrency(calculation.exemptAllowancesTotal)} / {formatCurrency(calculation.exemptAllowancesCap)}</span>
-                          </div>
-                        </>
-                      )}
+{(calculation.housingAllowance > 0 || calculation.transportAllowance > 0 || calculation.livingAllowance > 0 || calculation.foodAllowance > 0) && (
+  <>
+    <div className="flex justify-between text-green-600 border-t pt-2">
+      <span className="font-medium">Total primes exonérées:</span>
+      <span className="font-medium">{formatCurrency(calculation.exemptAllowances)}</span>
+    </div>
+    <div className="flex justify-between text-green-600 text-xs">
+      <span>
+        {calculation.exemptAllowances > calculation.exemptAllowancesCap 
+          ? "Montant déduit (limité à 25% du brut):" 
+          : "Montant déduit (total):"
+        }
+      </span>
+      <span>{formatCurrency(calculation.exemptAllowancesTotal)} / {formatCurrency(calculation.exemptAllowancesCap)}</span>
+    </div>
+  </>
+)}
                       
                       <div className="flex justify-between border-t pt-2 font-medium">
                         <span>Total brut:</span>
@@ -1077,27 +1082,37 @@ const SalaryCalculator = () => {
                   </div>
 
                   {/* Détails du calcul RTS */}
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold mb-2">Calcul du Salaire Imposable (RTS)</h3>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span>Salaire brut:</span>
-                        <span>{formatCurrency(calculation.grossSalary)}</span>
-                      </div>
-                      <div className="flex justify-between text-red-600">
-                        <span>CNSS salariale:</span>
-                        <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
-                      </div>
-                      <div className="flex justify-between text-red-600">
-                        <span>Primes exonérées (max 25%):</span>
-                        <span>- {formatCurrency(calculation.exemptAllowancesTotal)}</span>
-                      </div>
-                      <div className="flex justify-between border-t pt-1 font-medium">
-                        <span>Salaire imposable:</span>
-                        <span>{formatCurrency(calculation.taxableIncome)}</span>
-                      </div>
-                    </div>
-                  </div>
+<div className="mb-4 p-3 bg-gray-50 rounded-lg">
+  <h3 className="font-semibold mb-2">Calcul du Salaire Imposable (RTS)</h3>
+  <div className="space-y-1 text-sm">
+    <div className="flex justify-between">
+      <span>Salaire brut:</span>
+      <span>{formatCurrency(calculation.grossSalary)}</span>
+    </div>
+    <div className="flex justify-between text-red-600">
+      <span>CNSS salariale:</span>
+      <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
+    </div>
+    <div className="flex justify-between text-red-600">
+      <span>
+        {calculation.exemptAllowances > calculation.exemptAllowancesCap 
+          ? "Primes exonérées (limitées à 25%):" 
+          : "Primes exonérées (total):"
+        }
+      </span>
+      <span>- {formatCurrency(calculation.exemptAllowancesTotal)}</span>
+    </div>
+    {calculation.exemptAllowances > calculation.exemptAllowancesCap && (
+      <div className="text-xs text-gray-500 text-right">
+        (Primes réelles: {formatCurrency(calculation.exemptAllowances)})
+      </div>
+    )}
+    <div className="flex justify-between border-t pt-1 font-medium">
+      <span>Salaire imposable:</span>
+      <span>{formatCurrency(calculation.taxableIncome)}</span>
+    </div>
+  </div>
+</div>
 
                   {/* Détails des déductions */}
                   <div>

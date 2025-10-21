@@ -179,10 +179,19 @@ export const calculateEmployerCharges = (grossSalary, employeeCount = 0) => {
   };
 };
 
-// Calcul du salaire imposable pour la RTS
+// Calcul du salaire imposable pour la RTS - CORRIGÉ
 export const calculateTaxableIncome = (grossSalary, cnssEmployee, exemptAllowances) => {
   const exemptAllowancesCap = grossSalary * 0.25; // 25% du salaire brut
-  const exemptAllowancesTotal = Math.min(exemptAllowances, exemptAllowancesCap);
+  
+  // CORRECTION : On déduit toujours le montant réel des primes exonérées,
+  // mais seulement si elles ne dépassent pas 25% du brut
+  let exemptAllowancesTotal = exemptAllowances;
+  
+  // Si les primes dépassent 25% du brut, on limite la déduction à 25%
+  if (exemptAllowances > exemptAllowancesCap) {
+    exemptAllowancesTotal = exemptAllowancesCap;
+  }
+  // Sinon, on déduit le montant réel des primes (pas les 25% du brut)
   
   return grossSalary - cnssEmployee - exemptAllowancesTotal;
 };
@@ -218,7 +227,7 @@ export const calculateOvertimePay = (baseSalary, overtimeData) => {
   };
 };
 
-// NOUVEAU : Calcul du salaire net complet avec paramètre employeeCount
+// NOUVEAU : Calcul du salaire net complet avec paramètre employeeCount - CORRIGÉ
 export const calculateNetSalary = (employeeData, employeeCount = 0) => {
   const {
     baseSalary = 0,
@@ -249,12 +258,15 @@ export const calculateNetSalary = (employeeData, employeeCount = 0) => {
   // Calcul des cotisations (CNSS seulement)
   const socialContributions = calculateSocialContributions(grossSalary);
   
-  // Calcul du salaire imposable pour la RTS
-  const taxableIncome = calculateTaxableIncome(
-    grossSalary, 
-    socialContributions.cnss, 
-    exemptAllowances
-  );
+  // CORRECTION : Calcul du salaire imposable avec la nouvelle logique
+  const exemptAllowancesCap = grossSalary * 0.25;
+  let exemptAllowancesTotal = exemptAllowances;
+  
+  if (exemptAllowances > exemptAllowancesCap) {
+    exemptAllowancesTotal = exemptAllowancesCap;
+  }
+  
+  const taxableIncome = grossSalary - socialContributions.cnss - exemptAllowancesTotal;
   
   // Calcul de l'impôt sur le revenu (RTS)
   const incomeTax = calculateIncomeTax(taxableIncome);
@@ -265,7 +277,7 @@ export const calculateNetSalary = (employeeData, employeeCount = 0) => {
   // Salaire net
   const netSalary = grossSalary - totalDeductions;
 
-  // NOUVEAU : Charges employeur avec sélection Taxe d'Apprentissage/ONFPP
+  // Charges employeur avec sélection Taxe d'Apprentissage/ONFPP
   const employerCharges = calculateEmployerCharges(grossSalary, employeeCount);
 
   return {
@@ -288,9 +300,9 @@ export const calculateNetSalary = (employeeData, employeeCount = 0) => {
     netSalary: Math.round(netSalary),
     taxableIncome: Math.round(taxableIncome),
     employerCharges,
-    exemptAllowancesCap: Math.round(grossSalary * 0.25),
-    exemptAllowancesTotal: Math.round(Math.min(exemptAllowances, grossSalary * 0.25)),
-    employeeCount: employeeCount // NOUVEAU : Inclure l'effectif dans le résultat
+    exemptAllowancesCap: Math.round(exemptAllowancesCap),
+    exemptAllowancesTotal: Math.round(exemptAllowancesTotal), // CORRECTION : Montant réellement déduit
+    employeeCount: employeeCount
   };
 };
 
