@@ -13,8 +13,8 @@ const BatchSalaryImport = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // État pour le mapping colonne par colonne
-  const [columnMapping, setColumnMapping] = useState({
+  // État pour le mapping colonne par colonne - CORRIGÉ
+  const initialColumnMapping = {
     matricule: { file: null, data: [], preview: [] },
     nom: { file: null, data: [], preview: [] },
     prenom: { file: null, data: [], preview: [] },
@@ -26,9 +26,11 @@ const BatchSalaryImport = () => {
     autresPrimes: { file: null, data: [], preview: [] },
     heuresSupplementaires: { file: null, data: [], preview: [] },
     avantagesNature: { file: null, data: [], preview: [] }
-  });
+  };
 
-  // Références pour les inputs file de chaque colonne
+  const [columnMapping, setColumnMapping] = useState(initialColumnMapping);
+
+  // Références pour les inputs file de chaque colonne - CORRIGÉ
   const fileInputRefs = useRef({});
 
   // Fonction pour l'importation globale (existante)
@@ -65,10 +67,12 @@ const BatchSalaryImport = () => {
     reader.readAsText(file);
   };
 
-  // Nouvelle fonction pour l'importation colonne par colonne
+  // CORRECTION : Fonction pour l'importation colonne par colonne
   const handleColumnFileUpload = (columnName, event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    console.log(`Importation de la colonne ${columnName} avec le fichier:`, file.name);
 
     // Vérification du type de fichier
     const validExtensions = ['.csv', '.txt'];
@@ -104,16 +108,26 @@ const BatchSalaryImport = () => {
 
         setError(`✅ Colonne "${columnName}" importée: ${columnData.length} valeurs`);
         
-        // Réinitialiser l'input file
-        if (fileInputRefs.current[columnName]) {
-          fileInputRefs.current[columnName].value = '';
-        }
+        // Réinitialiser l'input file pour permettre la sélection du même fichier
+        event.target.value = '';
       } catch (err) {
         setError(`Erreur lors de la lecture du fichier pour ${columnName}: ${err.message}`);
+        console.error(err);
       }
     };
 
+    reader.onerror = () => {
+      setError(`Erreur de lecture du fichier pour ${columnName}`);
+    };
+
     reader.readAsText(file);
+  };
+
+  // CORRECTION : Fonction pour déclencher le input file
+  const triggerFileInput = (columnName) => {
+    if (fileInputRefs.current[columnName]) {
+      fileInputRefs.current[columnName].click();
+    }
   };
 
   // Fonction pour supprimer une colonne importée
@@ -451,7 +465,7 @@ const BatchSalaryImport = () => {
               </div>
             </div>
 
-            {/* Importation Colonne par Colonne - NOUVELLE SECTION */}
+            {/* Importation Colonne par Colonne - SECTION CORRIGÉE */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
                 <Table className="h-5 w-5 text-green-600" />
@@ -469,7 +483,7 @@ const BatchSalaryImport = () => {
                 </ul>
               </div>
 
-              {/* Tableau d'importation colonne par colonne */}
+              {/* Tableau d'importation colonne par colonne - CORRIGÉ */}
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Object.entries(columnMapping).map(([columnName, columnData]) => (
@@ -497,24 +511,25 @@ const BatchSalaryImport = () => {
                       </div>
 
                       <div className="space-y-2">
+                        {/* Input file caché - CORRECTION */}
                         <input
                           type="file"
                           accept=".csv,.txt"
                           onChange={(e) => handleColumnFileUpload(columnName, e)}
                           ref={el => fileInputRefs.current[columnName] = el}
-                          className="hidden"
-                          id={`file-${columnName}`}
+                          style={{ display: 'none' }}
                         />
-                        <label htmlFor={`file-${columnName}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full flex items-center space-x-2"
-                          >
-                            <Upload className="h-3 w-3" />
-                            <span>Importer {columnName}</span>
-                          </Button>
-                        </label>
+                        
+                        {/* Bouton pour déclencher l'input file - CORRECTION */}
+                        <Button
+                          onClick={() => triggerFileInput(columnName)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full flex items-center space-x-2"
+                        >
+                          <Upload className="h-3 w-3" />
+                          <span>Importer {columnName}</span>
+                        </Button>
 
                         <Button
                           onClick={() => downloadColumnTemplate(columnName)}
@@ -698,7 +713,7 @@ const BatchSalaryImport = () => {
             )}
           </div>
 
-          {/* Section Résultats (inchangée) */}
+          {/* Section Résultats */}
           <div className="space-y-6">
             {calculations.length > 0 && (
               <>
