@@ -94,7 +94,7 @@ export const calculateONFPP = (grossSalary) => {
   return grossSalary * SOCIAL_CONTRIBUTIONS.ONFPP_EMPLOYER_RATE;
 };
 
-// NOUVEAU : Calcul de la taxe d'apprentissage (3% du salaire brut)
+// Calcul de la taxe d'apprentissage (3% du salaire brut)
 export const calculateTaxeApprentissage = (grossSalary) => {
   if (!grossSalary || grossSalary <= 0) return 0;
   return grossSalary * SOCIAL_CONTRIBUTIONS.TAXE_APPRENTISSAGE_RATE;
@@ -148,7 +148,7 @@ export const calculateSocialContributions = (grossSalary) => {
   };
 };
 
-// NOUVEAU : Calcul des charges employeur avec sélection Taxe d'Apprentissage/ONFPP
+// Calcul des charges employeur avec sélection Taxe d'Apprentissage/ONFPP
 export const calculateEmployerCharges = (grossSalary, employeeCount = 0) => {
   const cnssEmployer = calculateCNSSEmployer(grossSalary);
   const versementForfaitaire = calculateVersementForfaitaire(grossSalary);
@@ -179,7 +179,7 @@ export const calculateEmployerCharges = (grossSalary, employeeCount = 0) => {
   };
 };
 
-// Calcul du salaire imposable pour la RTS - CORRIGÉ
+// Calcul du salaire imposable pour la RTS
 export const calculateTaxableIncome = (grossSalary, cnssEmployee, exemptAllowances) => {
   const exemptAllowancesCap = grossSalary * 0.25; // 25% du salaire brut
   
@@ -227,7 +227,7 @@ export const calculateOvertimePay = (baseSalary, overtimeData) => {
   };
 };
 
-// NOUVEAU : Calcul du salaire net complet avec paramètre employeeCount - CORRIGÉ
+// Calcul du salaire net complet avec paramètre employeeCount
 export const calculateNetSalary = (employeeData, employeeCount = 0) => {
   const {
     baseSalary = 0,
@@ -301,7 +301,7 @@ export const calculateNetSalary = (employeeData, employeeCount = 0) => {
     taxableIncome: Math.round(taxableIncome),
     employerCharges,
     exemptAllowancesCap: Math.round(exemptAllowancesCap),
-    exemptAllowancesTotal: Math.round(exemptAllowancesTotal), // CORRECTION : Montant réellement déduit
+    exemptAllowancesTotal: Math.round(exemptAllowancesTotal),
     employeeCount: employeeCount
   };
 };

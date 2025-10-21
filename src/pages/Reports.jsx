@@ -358,8 +358,9 @@ const Reports = () => {
   };
 
   const exportToPDF = () => {
-    if (!reportData) return;
+  if (!reportData) return;
 
+  try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPosition = 20;
@@ -395,6 +396,7 @@ const Reports = () => {
       ['Nombre de calculs', reportData.totalCalculations.toString()]
     ];
 
+    // CORRECTION : Utilisation correcte de autoTable
     doc.autoTable({
       startY: yPosition,
       head: [['Libellé', 'Valeur']],
@@ -485,7 +487,11 @@ const Reports = () => {
     });
 
     doc.save(`rapport-salarial-${getFormattedPeriod().replace(/ /g, '-')}.pdf`);
-  };
+  } catch (error) {
+    console.error('Erreur lors de la génération du PDF:', error);
+    alert('Erreur lors de la génération du PDF. Vérifiez la console pour plus de détails.');
+  }
+};
 
   const getFormattedPeriod = () => {
     const monthNames = [

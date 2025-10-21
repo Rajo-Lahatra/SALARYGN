@@ -1,328 +1,277 @@
+// CORRECTION : Importation correcte
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
-// Génération du bulletin de paie PDF
+// Fonction pour générer le bulletin de paie PDF
 export const generatePayslipPDF = async (employee, calculation, period, employer) => {
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  
-  // En-tête avec informations employeur
-  pdf.setFillColor(41, 128, 185);
-  pdf.rect(0, 0, pageWidth, 40, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
-  pdf.text(employer.companyName.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
-  pdf.setFontSize(20);
-  pdf.text('BULLETIN DE PAIE', pageWidth / 2, 25, { align: 'center' });
-  pdf.setFontSize(12);
-  pdf.text(`Période: ${period}`, pageWidth / 2, 32, { align: 'center' });
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let yPosition = 20;
+
+  // En-tête du bulletin
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BULLETIN DE PAIE', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 10;
 
   // Informations employeur
-  pdf.setTextColor(0, 0, 0);
-  pdf.setFontSize(10);
-  let yPosition = 50;
-  
-  if (employer.address || employer.city) {
-    pdf.text(`Adresse: ${employer.address || ''} ${employer.city || ''}`, 20, yPosition);
-    yPosition += 5;
-  }
-  
-  if (employer.phone) {
-    pdf.text(`Téléphone: ${employer.phone}`, 20, yPosition);
-    yPosition += 5;
-  }
-  
-  if (employer.email) {
-    pdf.text(`Email: ${employer.email}`, 20, yPosition);
-    yPosition += 5;
-  }
-  
-  if (employer.rccm || employer.nif) {
-    const rccmText = employer.rccm ? `RCCM: ${employer.rccm}` : '';
-    const nifText = employer.nif ? `NIF: ${employer.nif}` : '';
-    const separator = employer.rccm && employer.nif ? ' | ' : '';
-    pdf.text(`${rccmText}${separator}${nifText}`, 20, yPosition);
-    yPosition += 5;
-  }
-  
-  if (employer.cnssNumber) {
-    pdf.text(`CNSS: ${employer.cnssNumber}`, 20, yPosition);
-    yPosition += 5;
-  }
-
-  // NOUVEAU : Affichage de l'effectif
-  if (employer.employeeCount) {
-    pdf.text(`Effectif: ${employer.employeeCount} salariés`, 20, yPosition);
-    yPosition += 5;
-  }
-
-  // Ligne séparatrice
-  pdf.setDrawColor(200, 200, 200);
-  pdf.line(20, yPosition, pageWidth - 20, yPosition);
-  yPosition += 10;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Employeur: ${employer.companyName || 'Non spécifié'}`, 20, yPosition);
+  doc.text(`Période: ${period}`, pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 8;
+  doc.text(`Adresse: ${employer.address || 'Non spécifié'}`, 20, yPosition);
+  doc.text(`NIF: ${employer.nif || 'Non spécifié'}`, pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 8;
+  doc.text(`Téléphone: ${employer.phone || 'Non spécifié'}`, 20, yPosition);
+  doc.text(`RCCM: ${employer.rccm || 'Non spécifié'}`, pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 15;
 
   // Informations employé
-  pdf.setFontSize(14);
-  pdf.text('INFORMATIONS EMPLOYÉ', 20, yPosition);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('INFORMATIONS EMPLOYÉ', 20, yPosition);
+  yPosition += 8;
   
-  yPosition += 10;
-  pdf.setFontSize(10);
-  pdf.text(`Nom: ${employee.fullName}`, 20, yPosition);
-  pdf.text(`Poste: ${employee.position}`, 20, yPosition + 7);
-  pdf.text(`Matricule: ${employee.employeeId || 'N/A'}`, 20, yPosition + 14);
-  pdf.text(`Département: ${employee.department || 'N/A'}`, 100, yPosition);
-  pdf.text(`Type contrat: ${employee.employmentType || 'CDI'}`, 100, yPosition + 7);
-
-  // Détails du salaire
-  yPosition += 30;
-  pdf.setFontSize(14);
-  pdf.text('DÉTAIL DU SALAIRE', 20, yPosition);
-  
-  yPosition += 10;
-  pdf.setFontSize(10);
-  
-  // Gains - Filtrer les éléments à 0
-  const gains = [
-    { label: 'Salaire de base', value: calculation.baseSalary },
-    { label: 'Prime de logement', value: calculation.housingAllowance },
-    { label: 'Prime de transport', value: calculation.transportAllowance },
-    { label: 'Prime de cherté de vie', value: calculation.livingAllowance },
-    { label: 'Prime de nourriture', value: calculation.foodAllowance },
-    { label: 'Autres indemnités', value: calculation.allowances },
-    { label: 'Prime/Bonus', value: calculation.bonus },
-    { label: '13ème mois (prorata)', value: calculation.thirteenthMonth }
-  ].filter(item => item.value > 0);
-
-  gains.forEach((item, index) => {
-    pdf.text(item.label, 20, yPosition + (index * 7));
-    pdf.text(formatCurrencyForPDF(item.value), 150, yPosition + (index * 7), { align: 'right' });
-  });
-
-  // Heures supplémentaires détaillées - Filtrer les éléments à 0
-  if (calculation.overtimeHours > 0) {
-    yPosition += (gains.length * 7) + 5;
-    pdf.setFontSize(12);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('HEURES SUPPLÉMENTAIRES', 20, yPosition);
-    
-    yPosition += 10;
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'normal');
-    
-    const overtimeDetails = [
-      { label: 'Total heures supplémentaires', value: calculation.overtimePay },
-      { label: 'Heures 1-4 (30% majoration)', value: calculation.overtimeBreakdown.normal1to4 },
-      { label: 'Heures 5+ (60% majoration)', value: calculation.overtimeBreakdown.normal5plus },
-      { label: 'Heures nuit 1-4 (50% majoration)', value: calculation.overtimeBreakdown.night1to4 },
-      { label: 'Heures nuit 5+ (80% majoration)', value: calculation.overtimeBreakdown.night5plus }
-    ].filter(item => item.value > 0);
-
-    overtimeDetails.forEach((item, index) => {
-      pdf.text(item.label, 20, yPosition + (index * 7));
-      pdf.text(formatCurrencyForPDF(item.value), 150, yPosition + (index * 7), { align: 'right' });
-    });
-    
-    yPosition += (overtimeDetails.length * 7) + 5;
-  } else {
-    yPosition += (gains.length * 7) + 5;
-  }
-
-  // Total brut
-  pdf.text('Total Brut', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.grossSalary), 150, yPosition, { align: 'right' });
-
-  // Calcul RTS
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Nom: ${employee.fullName}`, 20, yPosition);
+  doc.text(`Matricule: ${employee.employeeId || 'Non spécifié'}`, pageWidth / 2, yPosition);
+  yPosition += 6;
+  doc.text(`Poste: ${employee.position || 'Non spécifié'}`, 20, yPosition);
+  doc.text(`Département: ${employee.department || 'Non spécifié'}`, pageWidth / 2, yPosition);
   yPosition += 15;
-  pdf.setFontSize(12);
-  pdf.setFont(undefined, 'bold');
-  pdf.text('CALCUL SALAIRE IMPOSABLE (RTS)', 20, yPosition);
+
+  // Récapitulatif des gains
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RÉCAPITULATIF DES GAINS', 20, yPosition);
+  yPosition += 8;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
   
-  yPosition += 10;
-  pdf.setFontSize(10);
-  pdf.setFont(undefined, 'normal');
-  
-  const rtsCalculation = [
-    { label: 'Salaire brut', value: calculation.grossSalary },
-    { label: 'CNSS salariale', value: -calculation.socialContributions.cnss },
-    { label: 'Primes exonérées (max 25%)', value: -calculation.exemptAllowancesTotal },
-    { label: 'SALAIRE IMPOSABLE RTS', value: calculation.taxableIncome }
+  const gains = [
+    ['Salaire de base', calculation.baseSalary],
+    ['Prime de logement', calculation.housingAllowance],
+    ['Prime de transport', calculation.transportAllowance],
+    ['Prime de cherté de vie', calculation.livingAllowance],
+    ['Prime de nourriture', calculation.foodAllowance],
+    ['Autres indemnités', calculation.allowances],
+    ['Avantages en nature', calculation.bonus],
+    ['Heures supplémentaires', calculation.overtimePay],
+    ['13ème mois et avantages', calculation.thirteenthMonth]
   ];
 
-  rtsCalculation.forEach((item, index) => {
-    pdf.text(item.label, 20, yPosition + (index * 7));
-    const value = item.value >= 0 ? 
-      formatCurrencyForPDF(item.value) : 
-      `- ${formatCurrencyForPDF(Math.abs(item.value))}`;
-    pdf.text(value, 150, yPosition + (index * 7), { align: 'right' });
+  // Ajouter les avantages supplémentaires s'ils existent
+  if (calculation.additionalBenefits && calculation.additionalBenefits.length > 0) {
+    calculation.additionalBenefits.forEach(benefit => {
+      gains.push([benefit.type, benefit.amount]);
+    });
+  }
+
+  gains.forEach(([label, amount]) => {
+    if (amount > 0) {
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(`${label}:`, 20, yPosition);
+      doc.text(formatCurrencyForPDF(amount), pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 6;
+    }
   });
 
-  // Déductions - Filtrer les éléments à 0
-  yPosition += 35;
-  const deductions = [
-    { label: 'Impôt sur le revenu (RTS)', value: calculation.incomeTax },
-    { label: 'Cotisation CNSS', value: calculation.socialContributions.cnss }
-  ].filter(item => item.value > 0);
+  // Total brut
+  if (yPosition > 240) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  yPosition += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Brut:', 20, yPosition);
+  doc.text(formatCurrencyForPDF(calculation.grossSalary), pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 10;
 
-  deductions.forEach((item, index) => {
-    pdf.text(item.label, 20, yPosition + (index * 7));
-    pdf.text(formatCurrencyForPDF(item.value), 150, yPosition + (index * 7), { align: 'right' });
+  // Détail des déductions
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DÉDUCTIONS', 20, yPosition);
+  yPosition += 8;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  
+  const deductions = [
+    ['Impôt sur le revenu (RTS)', calculation.incomeTax],
+    ['Cotisation CNSS', calculation.socialContributions.cnss]
+  ];
+
+  deductions.forEach(([label, amount]) => {
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.text(`${label}:`, 20, yPosition);
+    doc.text(`- ${formatCurrencyForPDF(amount)}`, pageWidth - 20, yPosition, { align: 'right' });
+    yPosition += 6;
   });
 
   // Total déductions
-  if (deductions.length > 0) {
-    yPosition += (deductions.length * 7) + 5;
-    pdf.text('Total Déductions', 20, yPosition);
-    pdf.text(formatCurrencyForPDF(calculation.totalDeductions), 150, yPosition, { align: 'right' });
-  } else {
-    yPosition += 5;
-  }
-
-  // Salaire net
-  yPosition += 15;
-  pdf.setFontSize(12);
-  pdf.setFont(undefined, 'bold');
-  pdf.text('SALAIRE NET À PAYER', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.netSalary), 150, yPosition, { align: 'right' });
-
-  // Vérifier si on a assez d'espace pour les charges employeur
-  const remainingSpace = pageHeight - yPosition - 40;
-  const employerChargesHeight = 60; // Augmenté pour inclure la logique conditionnelle
-  
-  if (remainingSpace < employerChargesHeight) {
-    pdf.addPage();
+  if (yPosition > 240) {
+    doc.addPage();
     yPosition = 20;
-  } else {
-    yPosition += 20;
   }
-
-  // CHARGES PATRONALES - MIS À JOUR AVEC TAXE D'APPRENTISSAGE/ONFPP
-  pdf.setFontSize(12);
-  pdf.setTextColor(139, 69, 19);
-  pdf.text('CHARGES PATRONALES', 20, yPosition);
-  
+  yPosition += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Déductions:', 20, yPosition);
+  doc.text(`- ${formatCurrencyForPDF(calculation.totalDeductions)}`, pageWidth - 20, yPosition, { align: 'right' });
   yPosition += 10;
-  pdf.setFontSize(10);
-  
-  // CNSS Patronale
-  pdf.text('CNSS Patronale (18%):', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.cnssEmployer), 150, yPosition, { align: 'right' });
-  
-  yPosition += 7;
-  
-  // Versement Forfaitaire (VF)
-  pdf.text('Versement Forfaitaire (6% base VF):', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.versementForfaitaire), 150, yPosition, { align: 'right' });
-  
-  yPosition += 7;
-  
-  // AFFICHAGE CONDITIONNEL : Taxe d'Apprentissage ou ONFPP
-  if (calculation.employerCharges.taxeApprentissage > 0) {
-    pdf.text('Taxe d\'Apprentissage (3% du brut):', 20, yPosition);
-    pdf.text(formatCurrencyForPDF(calculation.employerCharges.taxeApprentissage), 150, yPosition, { align: 'right' });
-  } else {
-    pdf.text('ONFPP (1.5% du brut):', 20, yPosition);
-    pdf.text(formatCurrencyForPDF(calculation.employerCharges.onfpp), 150, yPosition, { align: 'right' });
+
+  // Salaire net à payer
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
   }
-  
-  yPosition += 7;
-  
-  // Total charges patronales
-  pdf.setFont(undefined, 'bold');
-  pdf.text('Total charges patronales:', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.totalCharges), 150, yPosition, { align: 'right' });
-  
-  yPosition += 10;
-  pdf.setFont(undefined, 'normal');
-  
-  // Coût total pour l'employeur
-  pdf.text('Salaire brut:', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.grossSalary), 150, yPosition, { align: 'right' });
-  
-  yPosition += 7;
-  pdf.text('Charges patronales:', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.totalCharges), 150, yPosition, { align: 'right' });
-  
-  yPosition += 7;
-  pdf.setFont(undefined, 'bold');
-  pdf.text('COÛT TOTAL EMPLOYEUR:', 20, yPosition);
-  pdf.text(formatCurrencyForPDF(calculation.employerCharges.total), 150, yPosition, { align: 'right' });
-
-  // Notes
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SALAIRE NET À PAYER:', 20, yPosition);
+  doc.text(formatCurrencyForPDF(calculation.netSalary), pageWidth - 20, yPosition, { align: 'right' });
   yPosition += 15;
-  pdf.setFontSize(8);
-  pdf.setTextColor(128, 128, 128);
+
+  // Détail des charges patronales (nouvelle section)
+  if (yPosition > 200) {
+    doc.addPage();
+    yPosition = 20;
+  }
   
-  const notes = [
-    '* CNSS salariale: 5% (plafond 2.500.000 GNF, minimum 550.000 GNF)',
-    '* CNSS patronale: 18% (mêmes plafonds)',
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CHARGES PATRONALES', 20, yPosition);
+  yPosition += 8;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  
+  const employerCharges = [
+    ['CNSS Patronale (18%)', calculation.employerCharges.cnssEmployer],
+    ['Versement Forfaitaire (6%)', calculation.employerCharges.versementForfaitaire]
   ];
 
-  // NOUVEAU : Note conditionnelle pour Taxe d'Apprentissage ou ONFPP
+  // Ajouter la taxe appropriée
   if (calculation.employerCharges.taxeApprentissage > 0) {
-    notes.push('* Taxe d\'Apprentissage: 3% du salaire brut (entreprises de moins de 30 salariés)');
-  } else {
-    notes.push('* ONFPP: 1.5% du salaire brut (entreprises de 30 salariés ou plus)');
+    employerCharges.push(['Taxe d\'Apprentissage (3%)', calculation.employerCharges.taxeApprentissage]);
+  } else if (calculation.employerCharges.onfpp > 0) {
+    employerCharges.push(['ONFPP (1.5%)', calculation.employerCharges.onfpp]);
   }
 
-  notes.push(
-    '* Primes exonérées: logement, transport, cherté de vie, nourriture (max 25% du brut)',
-    '* Base VF = SI(Salaire<2.500.000; Salaire-(Salaire*6%); Salaire-(2.500.000*6%))',
-    '* VF = 6% de la base VF'
-  );
-  
-  if (calculation.overtimeHours > 0) {
-    notes.push('* Heures sup. 1-4: 30% majoration, Heures sup. 5+: 60% majoration');
-    notes.push('* Heures de nuit: +20% majoration supplémentaire (cumulable)');
-  }
-
-  // Vérifier l'espace pour les notes
-  const notesHeight = notes.length * 4;
-  const footerY = pageHeight - 20;
-  
-  if (yPosition + notesHeight > footerY - 10) {
-    pdf.addPage();
-    yPosition = 20;
-  }
-
-  // Afficher les notes
-  notes.forEach((note, index) => {
-    pdf.text(note, 20, yPosition + (index * 4));
+  employerCharges.forEach(([label, amount]) => {
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.text(`${label}:`, 20, yPosition);
+    doc.text(formatCurrencyForPDF(amount), pageWidth - 20, yPosition, { align: 'right' });
+    yPosition += 6;
   });
 
+  // Total charges patronales
+  if (yPosition > 240) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  yPosition += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Charges Patronales:', 20, yPosition);
+  doc.text(formatCurrencyForPDF(calculation.employerCharges.totalCharges), pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 8;
+
+  // Coût total employeur
+  doc.text('Coût Total Employeur:', 20, yPosition);
+  doc.text(formatCurrencyForPDF(calculation.employerCharges.total), pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 15;
+
   // Pied de page
-  const finalY = Math.max(yPosition + (notes.length * 4) + 10, footerY - 20);
-  pdf.setFontSize(8);
-  pdf.setTextColor(128, 128, 128);
-  
-  // Vérifier si on est sur la dernière page
-  const currentPage = pdf.internal.getCurrentPageInfo().pageNumber;
-  const totalPages = pdf.internal.getNumberOfPages();
-  
-  if (currentPage === totalPages) {
-    pdf.text('Document généré le ' + new Date().toLocaleDateString('fr-FR'), pageWidth / 2, finalY, { align: 'center' });
-    pdf.text('Signature employé', 20, finalY);
-    pdf.text('Cachet et signature employeur', pageWidth - 20, finalY, { align: 'right' });
+  if (yPosition > 250) {
+    doc.addPage();
+    yPosition = 20;
   }
   
-  // Sauvegarde du PDF
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Document généré automatiquement - Calculs conformes au barème fiscal guinéen', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 5;
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, yPosition, { align: 'center' });
+
+  // Sauvegarder le PDF
   const fileName = `bulletin-paie-${employee.fullName.replace(/\s+/g, '-')}-${period.replace(/\s+/g, '-')}.pdf`;
-  pdf.save(fileName);
+  doc.save(fileName);
 };
 
-// Fonction pour le formatage des montants
+// Fonction utilitaire pour formater les montants dans le PDF
 const formatCurrencyForPDF = (amount) => {
-  const numberString = Math.round(amount).toString();
+  return new Intl.NumberFormat('fr-GN', {
+    style: 'currency',
+    currency: 'GNF',
+    minimumFractionDigits: 0
+  }).format(amount);
+};
+
+// Fonction pour générer un rapport PDF détaillé
+export const generateDetailedReportPDF = (reportData, company, period) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let yPosition = 20;
+
+  // En-tête du rapport
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RAPPORT SALARIAL DÉTAILLÉ', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 10;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Période: ${period}`, 20, yPosition);
+  doc.text(`Entreprise: ${company?.company_name || 'Non spécifiée'}`, pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 8;
+  doc.text(`Effectif: ${company?.employee_count || 'Non spécifié'} salariés`, 20, yPosition);
+  doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, pageWidth - 20, yPosition, { align: 'right' });
+  yPosition += 20;
+
+  // Statistiques globales
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('STATISTIQUES GLOBALES', 20, yPosition);
+  yPosition += 10;
+
+  const stats = [
+    ['Total salaires bruts', reportData.salaryStats.totalGross],
+    ['Total salaires nets', reportData.salaryStats.totalNet],
+    ['Total impôts RTS', reportData.salaryStats.totalTax],
+    ['Total CNSS salariale', reportData.salaryStats.totalCNSS],
+    ['Total charges patronales', reportData.salaryStats.totalEmployerCharges],
+    ['Coût total employeur', reportData.salaryStats.totalEmployerCost],
+    ['Nombre de calculs', reportData.totalCalculations]
+  ];
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
   
-  let formatted = '';
-  let count = 0;
-  
-  for (let i = numberString.length - 1; i >= 0; i--) {
-    if (count > 0 && count % 3 === 0) {
-      formatted = ' ' + formatted;
+  stats.forEach(([label, value]) => {
+    if (yPosition > 270) {
+      doc.addPage();
+      yPosition = 20;
     }
-    formatted = numberString[i] + formatted;
-    count++;
-  }
-  
-  return `${formatted} FG`;
+    doc.text(`${label}:`, 20, yPosition);
+    
+    if (typeof value === 'number') {
+      doc.text(formatCurrencyForPDF(value), pageWidth - 20, yPosition, { align: 'right' });
+    } else {
+      doc.text(value.toString(), pageWidth - 20, yPosition, { align: 'right' });
+    }
+    
+    yPosition += 8;
+  });
+
+  doc.save(`rapport-salarial-${period.replace(/\s+/g, '-')}.pdf`);
 };

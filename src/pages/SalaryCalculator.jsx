@@ -46,6 +46,12 @@ const SalaryCalculator = () => {
     overtimeNight5plus: ''
   });
 
+  // NOUVEAUX ÉTATS POUR LES LISTES DÉROULANTES
+  const [selectedAllowanceType, setSelectedAllowanceType] = useState('');
+  const [selectedBenefitType, setSelectedBenefitType] = useState('');
+  const [additionalBenefits, setAdditionalBenefits] = useState([]);
+  const [newBenefitAmount, setNewBenefitAmount] = useState('');
+
   // État pour la période de paie
   const [payPeriod, setPayPeriod] = useState({
     month: new Date().getMonth() + 1,
@@ -56,6 +62,53 @@ const SalaryCalculator = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+
+  // Listes des options
+  const allowanceTypes = [
+    { value: '', label: 'Sélectionner un type d\'indemnité' },
+    { value: 'prime_anciennete', label: 'Prime d\'ancienneté' },
+    { value: 'prime_panier', label: 'Prime panier' },
+    { value: 'prime_rendement', label: 'Prime de rendement' },
+    { value: 'prime_projet', label: 'Prime de projet' },
+    { value: 'prime_risque', label: 'Prime de risque' },
+    { value: 'prime_technicite', label: 'Prime de technicité' },
+    { value: 'indemnite_deplacement', label: 'Indemnité de déplacement' },
+    { value: 'indemnite_mission', label: 'Indemnité de mission' },
+    { value: 'indemnite_fonction', label: 'Indemnité de fonction' },
+    { value: 'indemnite_formation', label: 'Indemnité de formation' },
+    { value: 'prime_assiduite', label: 'Prime d\'assiduité' },
+    { value: 'prime_excellence', label: 'Prime d\'excellence' },
+    { value: 'autre', label: 'Autre indemnité' }
+  ];
+
+  const benefitTypes = [
+    { value: '', label: 'Sélectionner un avantage en nature' },
+    { value: 'voiture_fonction', label: 'Voiture de fonction' },
+    { value: 'logement', label: 'Logement fourni' },
+    { value: 'telephone', label: 'Téléphone professionnel' },
+    { value: 'internet', label: 'Abonnement internet' },
+    { value: 'transport', label: 'Abonnement transport' },
+    { value: 'cantine', label: 'Repas cantine' },
+    { value: 'titres_restaurant', label: 'Titres-restaurant' },
+    { value: 'mutuelle', label: 'Mutuelle santé' },
+    { value: 'assurance', label: 'Assurance vie' },
+    { value: 'club_sport', label: 'Abonnement club sportif' },
+    { value: 'formation', label: 'Formation professionnelle' },
+    { value: 'creche', label: 'Garde d\'enfants' },
+    { value: 'autre', label: 'Autre avantage en nature' }
+  ];
+
+  const thirteenthMonthOptions = [
+    { value: '', label: 'Sélectionner un avantage supplémentaire' },
+    { value: 'treizieme_mois', label: '13ème mois' },
+    { value: 'quatorzieme_mois', label: '14ème mois' },
+    { value: 'prime_vacances', label: 'Prime de vacances' },
+    { value: 'prime_fin_annee', label: 'Prime de fin d\'année' },
+    { value: 'prime_exceptionnelle', label: 'Prime exceptionnelle' },
+    { value: 'participation_benefices', label: 'Participation aux bénéfices' },
+    { value: 'interessement', label: 'Intéressement' },
+    { value: 'autre_prime', label: 'Autre prime' }
+  ];
 
   // Charger les données de l'entreprise au démarrage
   useEffect(() => {
@@ -125,6 +178,82 @@ const SalaryCalculator = () => {
     }));
   };
 
+  // Fonction pour ajouter une indemnité
+  const handleAddAllowance = () => {
+    if (!selectedAllowanceType) {
+      setError('Veuillez sélectionner un type d\'indemnité');
+      return;
+    }
+
+    const selectedType = allowanceTypes.find(type => type.value === selectedAllowanceType);
+    const amount = parseFloat(salaryData.allowances) || 0;
+    
+    if (amount > 0) {
+      setSalaryData(prev => ({
+        ...prev,
+        allowances: amount.toString()
+      }));
+      setSelectedAllowanceType('');
+    }
+  };
+
+  // Fonction pour ajouter un avantage en nature
+  const handleAddBenefit = () => {
+    if (!selectedBenefitType || !newBenefitAmount) {
+      setError('Veuillez sélectionner un type d\'avantage et saisir un montant');
+      return;
+    }
+
+    const selectedType = benefitTypes.find(type => type.value === selectedBenefitType);
+    const amount = parseFloat(newBenefitAmount) || 0;
+
+    if (amount > 0) {
+      setSalaryData(prev => ({
+        ...prev,
+        bonus: amount.toString()
+      }));
+      setSelectedBenefitType('');
+      setNewBenefitAmount('');
+    }
+  };
+
+  // Fonction pour ajouter un avantage multiple
+  const handleAddMultipleBenefit = () => {
+    const selectedValue = document.getElementById('thirteenthMonthSelect').value;
+    if (!selectedValue) {
+      setError('Veuillez sélectionner un type d\'avantage');
+      return;
+    }
+
+    const selectedOption = thirteenthMonthOptions.find(opt => opt.value === selectedValue);
+    const amount = parseFloat(salaryData.thirteenthMonth) || 0;
+
+    if (selectedOption && selectedOption.value !== '') {
+      const newBenefit = {
+        id: Date.now(),
+        type: selectedOption.label,
+        amount: amount,
+        value: selectedOption.value
+      };
+
+      setAdditionalBenefits(prev => [...prev, newBenefit]);
+      
+      // Réinitialiser le sélecteur
+      document.getElementById('thirteenthMonthSelect').value = '';
+      setSalaryData(prev => ({ ...prev, thirteenthMonth: '' }));
+    }
+  };
+
+  // Fonction pour supprimer un avantage supplémentaire
+  const handleRemoveAdditionalBenefit = (id) => {
+    setAdditionalBenefits(prev => prev.filter(benefit => benefit.id !== id));
+  };
+
+  // Fonction pour calculer le total des avantages supplémentaires
+  const getTotalAdditionalBenefits = () => {
+    return additionalBenefits.reduce((total, benefit) => total + benefit.amount, 0);
+  };
+
   const handleSaveCompany = async () => {
     if (!employer.companyName) {
       setError('Le nom de l\'entreprise est requis');
@@ -167,11 +296,14 @@ const SalaryCalculator = () => {
     try {
       setTimeout(() => {
         try {
+          // Calculer le total des avantages supplémentaires
+          const totalAdditionalBenefits = getTotalAdditionalBenefits();
+          
           const result = calculateNetSalary({
             baseSalary: parseFloat(salaryData.baseSalary) || 0,
             allowances: parseFloat(salaryData.allowances) || 0,
             bonus: parseFloat(salaryData.bonus) || 0,
-            thirteenthMonth: parseFloat(salaryData.thirteenthMonth) || 0,
+            thirteenthMonth: (parseFloat(salaryData.thirteenthMonth) || 0) + totalAdditionalBenefits,
             housingAllowance: parseFloat(salaryData.housingAllowance) || 0,
             transportAllowance: parseFloat(salaryData.transportAllowance) || 0,
             livingAllowance: parseFloat(salaryData.livingAllowance) || 0,
@@ -184,7 +316,14 @@ const SalaryCalculator = () => {
             }
           }, parseInt(employer.employeeCount) || 0);
 
-          setCalculation(result);
+          // Ajouter les détails des avantages supplémentaires au résultat
+          const resultWithBenefits = {
+            ...result,
+            additionalBenefits: additionalBenefits,
+            totalAdditionalBenefits: totalAdditionalBenefits
+          };
+
+          setCalculation(resultWithBenefits);
 
           // Sauvegarder automatiquement le calcul si l'utilisateur est connecté
           if (user) {
@@ -194,9 +333,12 @@ const SalaryCalculator = () => {
                 employee,
                 salaryData,
                 employer,
-                payPeriod
+                payPeriod,
+                additionalBenefits,
+                selectedAllowanceType,
+                selectedBenefitType
               },
-              result,
+              result: resultWithBenefits,
               period: `${payPeriod.year}-${payPeriod.month.toString().padStart(2, '0')}`
             });
           }
@@ -256,6 +398,10 @@ const SalaryCalculator = () => {
       overtimeNight1to4: '',
       overtimeNight5plus: ''
     });
+    setSelectedAllowanceType('');
+    setSelectedBenefitType('');
+    setAdditionalBenefits([]);
+    setNewBenefitAmount('');
     setCalculation(null);
     setError('');
   };
@@ -547,7 +693,7 @@ const SalaryCalculator = () => {
               )}
             </div>
 
-            {/* INFORMATIONS EMPLOYÉ - SECTION RÉTABLIE */}
+            {/* INFORMATIONS EMPLOYÉ */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold flex items-center space-x-2">
@@ -638,7 +784,7 @@ const SalaryCalculator = () => {
               )}
             </div>
 
-            {/* Données salariales */}
+            {/* Données salariales MISE À JOUR */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-semibold mb-4">Données Salariales</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -703,43 +849,151 @@ const SalaryCalculator = () => {
                     min="0"
                   />
                 </div>
-                <div>
+
+                {/* Autres indemnités avec liste déroulante */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Autres Indemnités (GNF)
                   </label>
-                  <Input
-                    type="number"
-                    value={salaryData.allowances}
-                    onChange={(e) => handleSalaryChange('allowances', e.target.value)}
-                    placeholder="100000"
-                    min="0"
-                  />
+                  <div className="flex space-x-2">
+                    <select
+                      value={selectedAllowanceType}
+                      onChange={(e) => setSelectedAllowanceType(e.target.value)}
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                      {allowanceTypes.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      value={salaryData.allowances}
+                      onChange={(e) => handleSalaryChange('allowances', e.target.value)}
+                      placeholder="Montant"
+                      min="0"
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddAllowance}
+                      variant="outline"
+                      className="flex items-center space-x-1"
+                    >
+                      <span>✓</span>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sélectionnez le type d'indemnité et saisissez le montant
+                  </p>
                 </div>
-                <div>
+
+                {/* Avantages en nature avec liste déroulante */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prime/Bonus (GNF)
+                    Avantages en Nature (GNF)
                   </label>
-                  <Input
-                    type="number"
-                    value={salaryData.bonus}
-                    onChange={(e) => handleSalaryChange('bonus', e.target.value)}
-                    placeholder="500000"
-                    min="0"
-                  />
+                  <div className="flex space-x-2">
+                    <select
+                      value={selectedBenefitType}
+                      onChange={(e) => setSelectedBenefitType(e.target.value)}
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                      {benefitTypes.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      value={newBenefitAmount}
+                      onChange={(e) => setNewBenefitAmount(e.target.value)}
+                      placeholder="Montant"
+                      min="0"
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddBenefit}
+                      variant="outline"
+                      className="flex items-center space-x-1"
+                    >
+                      <span>✓</span>
+                    </Button>
+                  </div>
+                  {salaryData.bonus && (
+                    <div className="mt-2 p-2 bg-green-50 rounded border">
+                      <p className="text-sm text-green-700">
+                        Avantage en nature défini: {formatCurrency(parseFloat(salaryData.bonus))}
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sélectionnez le type d'avantage et saisissez la valeur mensuelle
+                  </p>
                 </div>
-                <div>
+
+                {/* Avantages supplémentaires (anciennement 13ème mois) */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    13ème Mois (Prorata GNF)
+                    Avantages Supplémentaires (GNF)
                   </label>
-                  <Input
-                    type="number"
-                    value={salaryData.thirteenthMonth}
-                    onChange={(e) => handleSalaryChange('thirteenthMonth', e.target.value)}
-                    placeholder="416667"
-                    min="0"
-                  />
+                  <div className="flex space-x-2">
+                    <select
+                      id="thirteenthMonthSelect"
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                      {thirteenthMonthOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      value={salaryData.thirteenthMonth}
+                      onChange={(e) => handleSalaryChange('thirteenthMonth', e.target.value)}
+                      placeholder="Montant"
+                      min="0"
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddMultipleBenefit}
+                      variant="outline"
+                      className="flex items-center space-x-1"
+                    >
+                      <span>+ Ajouter</span>
+                    </Button>
+                  </div>
+                  
+                  {/* Liste des avantages supplémentaires ajoutés */}
+                  {additionalBenefits.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Avantages ajoutés:</p>
+                      {additionalBenefits.map(benefit => (
+                        <div key={benefit.id} className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                          <span className="text-sm">{benefit.type}: {formatCurrency(benefit.amount)}</span>
+                          <button
+                            onClick={() => handleRemoveAdditionalBenefit(benefit.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex justify-between border-t pt-1">
+                        <span className="font-medium">Total avantages supplémentaires:</span>
+                        <span className="font-medium">{formatCurrency(getTotalAdditionalBenefits())}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ajoutez plusieurs avantages supplémentaires (13ème mois, primes exceptionnelles, etc.)
+                  </p>
                 </div>
               </div>
+              
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-700">
                   <strong>Note :</strong> Les primes de logement, transport, cherté de vie et nourriture sont exonérées d'impôt (dans la limite de 25% du salaire brut total).
@@ -1012,7 +1266,7 @@ const SalaryCalculator = () => {
                         <span>{formatCurrency(calculation.allowances)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Prime/Bonus:</span>
+                        <span>Avantages en nature:</span>
                         <span>{formatCurrency(calculation.bonus)}</span>
                       </div>
                       
@@ -1051,28 +1305,39 @@ const SalaryCalculator = () => {
                       )}
                       
                       <div className="flex justify-between">
-                        <span>13ème mois:</span>
+                        <span>13ème mois et avantages:</span>
                         <span>{formatCurrency(calculation.thirteenthMonth)}</span>
                       </div>
+
+                      {/* Détail des avantages supplémentaires */}
+                      {calculation.additionalBenefits && calculation.additionalBenefits.length > 0 && (
+                        <>
+                          <div className="flex justify-between text-purple-600">
+                            <span>Avantages supplémentaires:</span>
+                            <span>{formatCurrency(calculation.totalAdditionalBenefits)}</span>
+                          </div>
+                          {calculation.additionalBenefits.map((benefit, index) => (
+                            <div key={index} className="flex justify-between text-purple-600 pl-4">
+                              <span className="text-xs">{benefit.type}:</span>
+                              <span className="text-xs">{formatCurrency(benefit.amount)}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
                       
                       {/* Résumé des primes exonérées */}
-{(calculation.housingAllowance > 0 || calculation.transportAllowance > 0 || calculation.livingAllowance > 0 || calculation.foodAllowance > 0) && (
-  <>
-    <div className="flex justify-between text-green-600 border-t pt-2">
-      <span className="font-medium">Total primes exonérées:</span>
-      <span className="font-medium">{formatCurrency(calculation.exemptAllowances)}</span>
-    </div>
-    <div className="flex justify-between text-green-600 text-xs">
-      <span>
-        {calculation.exemptAllowances > calculation.exemptAllowancesCap 
-          ? "Montant déduit (limité à 25% du brut):" 
-          : "Montant déduit (total):"
-        }
-      </span>
-      <span>{formatCurrency(calculation.exemptAllowancesTotal)} / {formatCurrency(calculation.exemptAllowancesCap)}</span>
-    </div>
-  </>
-)}
+                      {(calculation.housingAllowance > 0 || calculation.transportAllowance > 0 || calculation.livingAllowance > 0 || calculation.foodAllowance > 0) && (
+                        <>
+                          <div className="flex justify-between text-green-600 border-t pt-2">
+                            <span className="font-medium">Total primes exonérées:</span>
+                            <span className="font-medium">{formatCurrency(calculation.exemptAllowances)}</span>
+                          </div>
+                          <div className="flex justify-between text-green-600 text-xs">
+                            <span>Plafond utilisé (25% du brut):</span>
+                            <span>{formatCurrency(calculation.exemptAllowancesTotal)} / {formatCurrency(calculation.exemptAllowancesCap)}</span>
+                          </div>
+                        </>
+                      )}
                       
                       <div className="flex justify-between border-t pt-2 font-medium">
                         <span>Total brut:</span>
@@ -1082,37 +1347,27 @@ const SalaryCalculator = () => {
                   </div>
 
                   {/* Détails du calcul RTS */}
-<div className="mb-4 p-3 bg-gray-50 rounded-lg">
-  <h3 className="font-semibold mb-2">Calcul du Salaire Imposable (RTS)</h3>
-  <div className="space-y-1 text-sm">
-    <div className="flex justify-between">
-      <span>Salaire brut:</span>
-      <span>{formatCurrency(calculation.grossSalary)}</span>
-    </div>
-    <div className="flex justify-between text-red-600">
-      <span>CNSS salariale:</span>
-      <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
-    </div>
-    <div className="flex justify-between text-red-600">
-      <span>
-        {calculation.exemptAllowances > calculation.exemptAllowancesCap 
-          ? "Primes exonérées (limitées à 25%):" 
-          : "Primes exonérées (total):"
-        }
-      </span>
-      <span>- {formatCurrency(calculation.exemptAllowancesTotal)}</span>
-    </div>
-    {calculation.exemptAllowances > calculation.exemptAllowancesCap && (
-      <div className="text-xs text-gray-500 text-right">
-        (Primes réelles: {formatCurrency(calculation.exemptAllowances)})
-      </div>
-    )}
-    <div className="flex justify-between border-t pt-1 font-medium">
-      <span>Salaire imposable:</span>
-      <span>{formatCurrency(calculation.taxableIncome)}</span>
-    </div>
-  </div>
-</div>
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold mb-2">Calcul du Salaire Imposable (RTS)</h3>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Salaire brut:</span>
+                        <span>{formatCurrency(calculation.grossSalary)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>CNSS salariale:</span>
+                        <span>- {formatCurrency(calculation.socialContributions.cnss)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>Primes exonérées (max 25%):</span>
+                        <span>- {formatCurrency(calculation.exemptAllowancesTotal)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1 font-medium">
+                        <span>Salaire imposable:</span>
+                        <span>{formatCurrency(calculation.taxableIncome)}</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Détails des déductions */}
                   <div>
