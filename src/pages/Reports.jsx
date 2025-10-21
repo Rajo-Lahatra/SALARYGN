@@ -357,10 +357,14 @@ const Reports = () => {
     document.body.removeChild(link);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
   if (!reportData) return;
 
   try {
+    // Importation dynamique pour éviter les problèmes de bundle
+    const { jsPDF } = await import('jspdf');
+    const autoTable = await import('jspdf-autotable').then(module => module.default);
+    
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPosition = 20;
@@ -396,14 +400,14 @@ const Reports = () => {
       ['Nombre de calculs', reportData.totalCalculations.toString()]
     ];
 
-    // CORRECTION : Utilisation correcte de autoTable
-    doc.autoTable({
+    // Utilisation de autoTable via l'import dynamique
+    autoTable(doc, {
       startY: yPosition,
       head: [['Libellé', 'Valeur']],
       body: statsData,
       theme: 'grid',
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [0, 100, 0] }
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     yPosition = doc.lastAutoTable.finalY + 15;
@@ -422,13 +426,13 @@ const Reports = () => {
       dept.count.toString()
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['Département', 'Total Brut', 'Total Net', 'Total Impôts', 'Employés']],
       body: deptData,
       theme: 'grid',
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [0, 100, 0] }
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     yPosition = doc.lastAutoTable.finalY + 15;
@@ -449,13 +453,13 @@ const Reports = () => {
       ['Total Charges Patronales', formatCurrency(reportData.salaryStats.totalEmployerCharges)]
     ];
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['Type de Charge', 'Montant']],
       body: chargesData,
       theme: 'grid',
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [0, 100, 0] }
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     // Nouvelle page pour le détail des employés
@@ -467,9 +471,9 @@ const Reports = () => {
     doc.text('DÉTAIL PAR EMPLOYÉ', 20, yPosition);
     yPosition += 10;
 
-    const employeeData = reportData.employeeDetails.map(emp => [
-      emp.name,
-      emp.matricule,
+    const employeeData = reportData.employeeDetails.slice(0, 20).map(emp => [ // Limiter à 20 employés pour éviter les PDF trop longs
+      emp.name.substring(0, 20), // Limiter la longueur du nom
+      emp.matricule || '-',
       formatCurrency(emp.brut),
       formatCurrency(emp.net),
       formatCurrency(emp.impots),
@@ -477,14 +481,24 @@ const Reports = () => {
       formatCurrency(emp.total_charges_patronales)
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['Employé', 'Matricule', 'Brut', 'Net', 'Impôts', 'CNSS Sal', 'Charges Pat']],
       body: employeeData,
       theme: 'grid',
       styles: { fontSize: 7 },
-      headStyles: { fillColor: [0, 100, 0] }
+      headStyles: { fillColor: [41, 128, 185] },
+      pageBreak: 'auto'
     });
+
+    // Si plus de 20 employés, ajouter une note
+    if (reportData.employeeDetails.length > 20) {
+      doc.addPage();
+      yPosition = 20;
+      doc.setFontSize(10);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`Note: Seuls les 20 premiers employés sont affichés sur un total de ${reportData.employeeDetails.length}`, 20, yPosition);
+    }
 
     doc.save(`rapport-salarial-${getFormattedPeriod().replace(/ /g, '-')}.pdf`);
   } catch (error) {
